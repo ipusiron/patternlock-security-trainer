@@ -4,24 +4,344 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PatternLock Security Trainer</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
-    .tag { display:inline-block; padding:.2rem .5rem; border-radius:.4rem; background:#eee; }
-    footer { margin-top:3rem; font-size:.95rem; }
-    .footer { padding:.75rem 1rem; background:#f6f6f6; border-radius:.5rem; display:inline-block; }
-  </style>
+  <meta name="description" content="Analyze and train the security of Android-style 3×3 lock patterns." />
+  <!-- セキュリティヘッダー -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; media-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none';" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+  <meta http-equiv="Referrer-Policy" content="no-referrer" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1>PatternLock Security Trainer</h1>
-  <p>This is a placeholder page. The interactive demo will be published here later.</p>
+  <!-- Theme toggle button -->
+  <button class="theme-toggle" id="themeToggle" aria-label="テーマ切り替え">
+    <span class="sun-icon">☀️</span>
+    <span class="moon-icon">🌙</span>
+  </button>
+
+  <header class="site-header">
+    <h1>PatternLock Security Trainer</h1>
+    <p class="subtitle">Android式の3×3ロックパターンのセキュリティを分析する</p>
+  </header>
+
+  <section class="notice">
+    <strong>⚠️ 注意:</strong>
+    <span>実際に使用中のロックパターンは入力しないでください。</span>
+  </section>
+
+  <!-- ★ ここが安心メッセージ -->
+  <section class="assurance">
+    <div class="assurance-emoji" aria-hidden="true">🔒</div>
+    <div>
+      <strong>プライバシー保証:</strong>
+      <div>本ツールは <em>完全にブラウザー内</em> で動作し、入力したパターンを <em>ネットワーク送信しません</em>。</div>
+      <div>自動保存もしません。<b>パターンを保存</b> ボタンを押した場合のみ、お使いの端末に保存され、いつでも削除できます。</div>
+    </div>
+  </section>
+
+  <!-- タブナビゲーション -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="checker">パターン強度検査</button>
+    <button class="tab-btn" data-tab="examples">パターン例</button>
+    <button class="tab-btn" data-tab="learning">座学</button>
+  </nav>
+
+  <!-- タブコンテンツ -->
+  <div class="tab-content" id="checker-tab" style="display: block;">
+    <main class="grid two-col">
+    <section class="panel">
+      <h2>パターンを描く</h2>
+      <div class="pad-wrap">
+        <canvas id="pad" width="360" height="360" aria-label="Pattern input pad"></canvas>
+        <div class="pad-controls">
+          <button id="undoBtn" class="btn">元に戻す</button>
+          <button id="clearBtn" class="btn btn-secondary">クリア</button>
+          <label class="chk">
+            <input type="checkbox" id="showIdx" />
+            ノード番号を表示
+          </label>
+        </div>
+        <div id="patternText" class="mono pattern-sequence"></div>
+      </div>
+
+    </section>
+
+    <section class="panel">
+      <div class="report">
+        <h3>パターン概要
+          <span class="help-icon" data-tooltip="パターンの複雑さを0-100点で評価します。予測しにくいパターンほど高得点です。">?</span>
+        </h3>
+        <div class="radar-container">
+          <canvas id="radarChart" width="280" height="280"></canvas>
+          <div class="radar-legend">
+            <div class="legend-item"><span class="legend-color legend-length"></span>長さ（Length）: <span id="kLen">–</span><span class="help-icon" data-tooltip="使用するノード数が多いほど強度が向上します。">?</span></div>
+            <div class="legend-item"><span class="legend-color legend-turns"></span>ターン数（Turns）: <span id="kTurns">–</span><span class="help-icon" data-tooltip="直線より曲がったパターンの方が予測しにくくなります。">?</span></div>
+            <div class="legend-item"><span class="legend-color legend-intersections"></span>交差数（Intersections）: <span id="kXings">–</span><span class="help-icon" data-tooltip="線が交差するほど複雑で覗き見されにくくなります。">?</span></div>
+            <div class="legend-item"><span class="legend-color legend-angles"></span>角度多様性（Angle Var）: <span id="kAngVar">–</span><span class="help-icon" data-tooltip="様々な方向に線が向いているほど複雑になります。">?</span></div>
+            <div class="legend-item"><span class="legend-color legend-start"></span>開始点（Start）: <span id="kStart">–</span><span class="help-icon" data-tooltip="角や辺から始めると推測されやすいため減点されます。">?</span></div>
+            <div class="legend-item"><span class="legend-color legend-symmetry"></span>対称性（Symmetry）: <span id="kSym">–</span><span class="help-icon" data-tooltip="対称的なパターンは美しいですが予測されやすいため減点されます。">?</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="heat">
+        <h3>ノード ヒートマップ</h3>
+        <canvas id="heat" width="180" height="180"></canvas>
+      </div>
+    </section>
+    </main>
+
+    <div class="panel-centered" style="margin-top: 0;">
+      <section class="panel">
+        <h2>強度評価</h2>
+      <div class="score-row">
+        <div class="score-meter">
+          <div id="scoreBar" class="score-bar"><span id="scoreVal">0</span></div>
+          <div class="score-label"><span id="scoreWord">Very Weak</span></div>
+        </div>
+        <div class="attack">
+          <label>攻撃速度:
+            <select id="speedSel">
+              <option value="10">10 回/秒</option>
+              <option value="100" selected>100 回/秒</option>
+              <option value="1000">1000 回/秒</option>
+            </select>
+          </label>
+          <div class="guess mono">
+            推定試行回数: <span id="guessTries">–</span><br/>
+            突破までの時間: <span id="eta">–</span>
+          </div>
+        </div>
+      </div>
+
+      <details class="weights">
+        <summary>スコアリング重み設定（教育的透明性）</summary>
+        <div class="wgrid">
+          <label>長さ <input type="range" min="0" max="2" step="0.1" id="wLen" value="1.0"><span id="wLenV">1.0</span></label>
+          <label>ターン数 <input type="range" min="0" max="2" step="0.1" id="wTurn" value="1.0"><span id="wTurnV">1.0</span></label>
+          <label>交差数 <input type="range" min="0" max="2" step="0.1" id="wX" value="1.0"><span id="wXV">1.0</span></label>
+          <label>角度多様性 <input type="range" min="0" max="2" step="0.1" id="wAng" value="1.0"><span id="wAngV">1.0</span></label>
+          <label>開始点バイアス（角ペナルティ） <input type="range" min="-2" max="0" step="0.1" id="wStart" value="-1.0"><span id="wStartV">-1.0</span></label>
+          <label>対称性ペナルティ <input type="range" min="-2" max="0" step="0.1" id="wSym" value="-1.0"><span id="wSymV">-1.0</span></label>
+        </div>
+        <button id="resetWeights" class="btn btn-secondary">デフォルトに戻す</button>
+      </details>
+      </section>
+    </div>
+
+    
+    <div class="panel-centered">
+      <section class="panel">
+        <h2>パターンの保存</h2>
+
+        <div class="save-box">
+          <div class="save-row">
+            <input type="text" id="saveName" placeholder="ラベル（例：'パターン1'）" />
+            <button id="saveBtn" class="btn">パターンを保存</button>
+          </div>
+          <div class="save-actions">
+            <button id="clearAllBtn" class="btn btn-secondary">すべて削除</button>
+          </div>
+          <div id="savedList" class="saved"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- パターン例タブ -->
+  <div class="tab-content" id="examples-tab" style="display: none;">
+    <div class="panel-centered">
+      <section class="panel">
+        <h2>典型的なパターン例</h2>
+        <div class="pattern-examples">
+          <h3>🔴 脆弱なパターン例</h3>
+          <div class="example-grid">
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="0,1,2"></canvas>
+              <div class="example-info">
+                <div class="example-title">直線（上段）</div>
+                <div class="example-desc">スコア: 5-10</div>
+                <div class="example-warn">最も推測されやすい</div>
+              </div>
+            </div>
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="0,4,8"></canvas>
+              <div class="example-info">
+                <div class="example-title">対角線</div>
+                <div class="example-desc">スコア: 10-15</div>
+                <div class="example-warn">よく使われるパターン</div>
+              </div>
+            </div>
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="0,3,6,7,8"></canvas>
+              <div class="example-info">
+                <div class="example-title">L字型</div>
+                <div class="example-desc">スコア: 15-25</div>
+                <div class="example-warn">シンプルな形状で予測しやすい</div>
+              </div>
+            </div>
+          </div>
+
+          <h3>🟡 中程度のパターン例</h3>
+          <div class="example-grid">
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="4,1,0,3,6"></canvas>
+              <div class="example-info">
+                <div class="example-title">中央開始5点</div>
+                <div class="example-desc">スコア: 35-45</div>
+                <div class="example-warn">中央開始でやや安全</div>
+              </div>
+            </div>
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="1,4,7,8,5"></canvas>
+              <div class="example-info">
+                <div class="example-title">下向きターン</div>
+                <div class="example-desc">スコア: 40-50</div>
+                <div class="example-warn">ターンありで予測困難</div>
+              </div>
+            </div>
+          </div>
+
+          <h3>🟢 安全なパターン例</h3>
+          <div class="example-grid">
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="1,0,3,2,5,8"></canvas>
+              <div class="example-info">
+                <div class="example-title">辺からのジグザグ</div>
+                <div class="example-desc">スコア: 70-80</div>
+                <div class="example-warn">多ターン・高複雑性</div>
+              </div>
+            </div>
+            <div class="example-item">
+              <canvas class="mini-pad" data-pattern="0,8,2,6"></canvas>
+              <div class="example-info">
+                <div class="example-title">交差パターン</div>
+                <div class="example-desc">スコア: 65-75</div>
+                <div class="example-warn">交差あり・非対称</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 座学タブ -->
+  <div class="tab-content" id="learning-tab" style="display: none;">
+    <div class="panel-centered">
+      <section class="panel">
+        <h2>パターンロックの座学</h2>
+
+        <details class="learning-accordion">
+          <summary class="learning-summary">
+            <span style="font-size: 24px;">👤</span>
+            ユーザー向けのヒント
+          </summary>
+          <div class="learning-content">
+            <ul>
+              <li>
+                <strong>最低でも6点以上を使用</strong><br>
+                4点パターンは389,112通りしかありません。6点なら約100万通りに増加します。
+              </li>
+              <li>
+                <strong>角から始めない</strong><br>
+                統計的に44%のユーザーが左上角（位置0）から開始します。中央や辺から始めましょう。
+              </li>
+              <li>
+                <strong>対称パターンを避ける</strong><br>
+                人間は美しい対称形を好みますが、これは推測されやすいです。
+              </li>
+              <li>
+                <strong>交差を増やす</strong><br>
+                線が交差するパターンは、ショルダーハッキング（肩越しの覗き見）への耐性も高まります。
+              </li>
+              <li>
+                <strong>定期的に変更</strong><br>
+                同じパターンを長期間使用すると、画面の汚れから推測される可能性があります。
+              </li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="learning-accordion">
+          <summary class="learning-summary">
+            <span style="font-size: 24px;">💻</span>
+            開発者向けのヒント
+          </summary>
+          <div class="learning-content">
+            <ul>
+              <li>
+                <strong>最小長の強制</strong><br>
+                システムで最低6点以上を必須にすることで、セキュリティを大幅に向上できます。
+              </li>
+              <li>
+                <strong>試行回数制限</strong><br>
+                5回失敗後に30秒待機、10回で5分待機など、ブルートフォース攻撃を防ぐ仕組みを実装しましょう。
+              </li>
+              <li>
+                <strong>バイオメトリクスとの併用</strong><br>
+                指紋認証や顔認証と組み合わせることで、利便性とセキュリティを両立できます。
+              </li>
+              <li>
+                <strong>パターン強度表示</strong><br>
+                ユーザーがパターンを設定する際に、リアルタイムで強度を表示することで、より安全なパターンを促せます。
+              </li>
+              <li>
+                <strong>スマッジ攻撃対策</strong><br>
+                画面をランダムな位置から開始させたり、ダミーの軌跡を表示することで対策できます。
+              </li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="learning-accordion">
+          <summary class="learning-summary">
+            <span style="font-size: 24px;">🎓</span>
+            セキュリティ初学者向けのヒント
+          </summary>
+          <div class="learning-content">
+            <ul>
+              <li>
+                <strong>パターンロックの仕組み</strong><br>
+                3×3の9点から最低4点を選んで一筆書きする認証方式です。理論上の最大組み合わせは389,112通りです。
+              </li>
+              <li>
+                <strong>なぜ推測されやすいか</strong><br>
+                人間には「左上から始める」「きれいな形を描く」といった共通の傾向があるためです。
+              </li>
+              <li>
+                <strong>攻撃手法の理解</strong><br>
+                <ul>
+                  <li>ショルダーハッキング：画面を覗き見る物理的攻撃</li>
+                  <li>スマッジ攻撃：画面の指紋跡から推測する攻撃</li>
+                  <li>ブルートフォース：総当たりで試す攻撃</li>
+                  <li>サーマル攻撃：サーモグラフィーでタッチした位置・軌跡を推測する攻撃</li>
+                </ul>
+              </li>
+              <li>
+                <strong>記憶のコツ</strong><br>
+                無意味な形より、「自分だけの物語」を作ると覚えやすいです。<br>
+                例：「家(4)から学校(2)へ行き、公園(6)で遊んで...」
+              </li>
+              <li>
+                <strong>二要素認証の重要性</strong><br>
+                パターンロック単体ではなく、PINコードや生体認証と組み合わせることで、セキュリティは飛躍的に向上します。
+              </li>
+            </ul>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
 
   <footer>
     <div class="footer">
-      🔗 GitHubリポジトリはこちら（
-      <a href="https://github.com/ipusiron/keypress-pattern-analyzer" target="_blank" rel="noopener">
-        ipusiron/keypress-pattern-analyzer
-      </a>
-      ）
+      🔗 GitHubリポジトリはこちら（ <a href="https://github.com/ipusiron/patternlock-security-trainer" target="_blank" rel="noopener noreferrer nofollow">ipusiron/patternlock-security-trainer</a> ）
+    </div>
   </footer>
+
+  <script src="./script.js"></script>
 </body>
 </html>
