@@ -37,8 +37,8 @@ demo: https://ipusiron.github.io/patternlock-security-trainer/
 
 ## 📸 スクリーンショット
 
->![強度評価100点のロックパターン例](assets/screenshot.png)  
->*強度評価100点のロックパターン例*
+>![強度評価100点のパターン例](assets/screenshot.png)  
+>*強度評価100点のパターン例*
 
 >![典型的なパターン例](assets/screenshot.png)  
 >*典型的なパターン例*
