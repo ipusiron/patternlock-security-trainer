@@ -1,11 +1,39 @@
 <!--
 ---
-title: PatternLock Security Trainer
-category: mobile-authentication
-difficulty: 2
-description: Analyze and train the security of Android-style 3×3 lock patterns.
-tags: [pattern-lock, authentication, security, education, visualization, android]
-demo: https://ipusiron.github.io/patternlock-security-trainer/
+id: day064
+slug: patternlock-security-trainer
+
+title: "PatternLock Security Trainer"
+
+subtitle_ja: "パターンロック強度測定ツール"
+subtitle_en: "Android Pattern Lock Security Analyzer"
+
+description_ja: "Android式の3×3パターンロックの強度を分析し、特徴量抽出・スコアリング・突破時間推定を可視化する教育ツール"
+description_en: "Analyze Android-style 3×3 pattern lock security with feature extraction, scoring, and estimated crack time visualization"
+
+category_ja:
+  - モバイルセキュリティ
+  - 認証
+category_en:
+  - Mobile Security
+  - Authentication
+
+difficulty: 4
+
+tags:
+  - pattern-lock
+  - authentication
+  - security
+  - education
+  - visualization
+  - android
+  - canvas
+  - heuristic-scoring
+
+repo_url: "https://github.com/ipusiron/patternlock-security-trainer"
+demo_url: "https://ipusiron.github.io/patternlock-security-trainer/"
+
+hub: true
 ---
 -->
 
