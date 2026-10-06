@@ -58,13 +58,17 @@
     return null;
   }
 
-  // 文字で書いたパターンを読む。数字 0〜8 を、区切り（空白・ハイフン・カンマ・矢印）でも、続けても書ける
-  // 飛び越えた点は Android と同じく自動で入れる。error: 'empty' | 'char' | 'repeat' | 'short'
+  // 文字で書いたパターンを読む。数字 0〜8 を、区切り（空白・ハイフン・カンマ・矢印・読点・中点）でも、続けても書ける
+  // 全角の数字・記号は NFKC で半角にそろえる。飛び越えた点は Android と同じく自動で入れる
+  // error: 'empty' | 'char' | 'repeat' | 'short'
+  const SEPARATORS = ' ,>-' + String.fromCharCode(0x2192, 0x3001, 0x30fb);
+  const isSeparator = (ch) => SEPARATORS.includes(ch) || /\s/.test(ch);
   function parse(text) {
-    const s = String(text == null ? '' : text).trim();
+    const s = String(text == null ? '' : text).normalize('NFKC').trim();
     if (!s) return { pattern: [], error: 'empty' };
-    if (/[^0-8\s,\-→>、・]/.test(s)) return { pattern: [], error: 'char' };
-    const digits = s.replace(/[\s,\-→>、・]+/g, '').split('').map(Number);
+    const chars = [...s];
+    if (chars.some((ch) => !isSeparator(ch) && !(ch >= '0' && ch <= '8'))) return { pattern: [], error: 'char' };
+    const digits = chars.filter((ch) => !isSeparator(ch)).map(Number);
     const p = [];
     for (const d of digits) {
       if (p.includes(d)) return { pattern: p, error: 'repeat', repeated: d };
@@ -267,18 +271,32 @@
     loge: 'Marte Dybevik Løge, "Tell Me Who You Are and I Will Tell You Your Unlock Pattern", Master\'s thesis, NTNU, 2015',
     uellenbeck: 'Uellenbeck, Dürmuth, Wolf, Holz, "Quantifying the Security of Graphical Passwords: The Case of Android Unlock Patterns", ACM CCS 2013',
     aviv2010: 'Aviv, Gibson, Mossop, Blaze, Smith, "Smudge Attacks on Smartphone Touch Screens", USENIX WOOT 2010',
-    aviv2015: 'Aviv, Budzitowski, Kuber, "Is Bigger Better? Comparing User-Generated Passwords on 3x3 vs. 4x4 Grid Sizes for Android\'s Pattern Unlock", ACSAC 2015',
+    aviv2015: 'Aviv, Budzitowski, Kuber, "Is Bigger Better? Comparing User-Generated Passwords on 3x3 vs. 4x4 Grid Sizes for '
+      + 'Android\'s Pattern Unlock", ACSAC 2015',
     aviv2017: 'Aviv, Davin, Wolf, Kuber, "Towards Baselines for Shoulder Surfing on Mobile Authentication", ACSAC 2017',
     ye2017: 'Ye, Tang, Fang, Chen, Kim, Taylor, Wang, "Cracking Android Pattern Lock in Five Attempts", NDSS 2017',
     abdelrahman2017: 'Abdelrahman, Khamis, Schneegass, Alt, "Stay Cool! Understanding Thermal Attacks on Mobile-based User Authentication", CHI 2017',
-    sun2014: 'Sun, Wang, Zheng, "Dissecting pattern unlock: The effect of pattern strength meter on pattern selection", Journal of Information Security and Applications, 2014',
+    sun2014: 'Sun, Wang, Zheng, "Dissecting pattern unlock: The effect of pattern strength meter on pattern selection", '
+      + 'Journal of Information Security and Applications, 2014',
     golla2019: 'Golla, Rimkus, Aviv, Dürmuth, "On the In-Accuracy and Influence of Android Pattern Strength Meters", NDSS USEC 2019',
     aosp: 'Android Open Source Project: LockPatternUtils.java, LockPatternView.java (frameworks/base), gatekeeper.cpp (system/gatekeeper)',
   };
 
+  // 「パターン例」タブの例（どれも有効なパターン。値は画面で計算する）
+  const EXAMPLES = [
+    { id: 'topLeft4', pattern: [0, 1, 2, 5] },
+    { id: 'letterL', pattern: [0, 3, 6, 7, 8] },
+    { id: 'letterZ', pattern: [0, 1, 2, 4, 6, 7, 8] },
+    { id: 'snake9', pattern: [0, 1, 2, 5, 4, 3, 6, 7, 8] },
+    { id: 'overlap', pattern: [1, 0, 2, 5, 8] },
+    { id: 'knight', pattern: [5, 0, 7, 2] },
+    { id: 'center', pattern: [4, 0, 1, 2, 5, 8] },
+    { id: 'complex', pattern: [4, 0, 8, 1, 7, 2, 6, 5, 3] },
+  ];
+
   root.PatternCore = {
     SIZE, NODES, MIN_LENGTH, xy, passes, extend, fromTouches, validate, parse, format, relation, unitSegments, startClass, features,
     sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, smudgeCandidates, sunPercentile,
-    gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES,
+    gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES, EXAMPLES,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

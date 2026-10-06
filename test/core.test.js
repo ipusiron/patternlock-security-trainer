@@ -34,6 +34,8 @@ test('文字で書いたパターンを読む', () => {
   assert.deepEqual(C.parse('0485'), { pattern: [0, 4, 8, 5], error: null });
   assert.deepEqual(C.parse(' 0 → 1 → 2 → 5 '), { pattern: [0, 1, 2, 5], error: null });
   assert.deepEqual(C.parse('0,8,2,6').pattern, [0, 4, 8, 5, 2, 6], '飛び越えた点は自動で入る');
+  assert.deepEqual(C.parse('０－４－８－５').pattern, [0, 4, 8, 5], '全角の数字とハイフン（IME）');
+  assert.deepEqual(C.parse('0、4・8\t5').pattern, [0, 4, 8, 5], '読点・中点・タブ');
   assert.equal(C.parse('').error, 'empty');
   assert.equal(C.parse('0-1-9').error, 'char');
   assert.equal(C.parse('a').error, 'char');
