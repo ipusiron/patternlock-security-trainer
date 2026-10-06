@@ -25,6 +25,9 @@ test('script.js・theme.js が使うキーは、すべて日本語の辞書に�
   for (const s of ['corner', 'edge', 'center']) keys.add(`start.${s}`);
   for (const s of ['simple', 'median', 'complex']) keys.add(`sun.${s}`);
   for (let i = 0; i < 9; i++) keys.add(`pos.${i}`);
+  for (const r of C.COMPARE_ROWS) keys.add(`compare.${r.key}`);
+  for (const w of ['a', 'b', 'same', 'none']) keys.add(`compare.winner.${w}`);
+  for (const c of ['lines', 'length', 'start', 'pin', 'wipe', 'os', 'real']) keys.add(`check.${c}`);
   for (const ex of C.EXAMPLES) for (const k of ['title', 'lesson']) keys.add(`ex.${ex.id}.${k}`);
   const missing = [...keys].filter((k) => !(k in MESSAGES.ja));
   assert.deepEqual(missing, []);

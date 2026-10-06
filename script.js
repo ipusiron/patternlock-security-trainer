@@ -286,6 +286,7 @@
     drawPad();
     renderShape(f);
     renderAttacks(f);
+    renderCompare();
   }
 
   // 全パターンの数え上げは重いので、最初の描画のあとに1回だけ行う
@@ -298,6 +299,7 @@
       renderSaved();
       if (examplesBuilt) renderExamples();
       if (learnBuilt || tabs.current() === 'learn') renderLearn();
+      renderChecklist();
     }, 30);
   }
 
@@ -489,6 +491,112 @@
   }
   let learnBuilt = false;
 
+  // ---- 2つを比べる ----
+  const compareState = { b: [] };
+
+  function compareValue(key, v) {
+    if (key === 'startShare' || key === 'lengthShare') return t('share.value', { n: v });
+    if (key === 'waitSeconds') return duration(v);
+    if (key === 'ps') return v.toFixed(2);
+    return num(v);
+  }
+
+  function renderCompare() {
+    $('compareA').textContent = state.pattern.length ? C.format(state.pattern) : t('compare.savedNone');
+    const body = $('compareTable').querySelector('tbody');
+    const status = $('compareStatus');
+    if (!state.statsReady) {
+      status.textContent = t('status.computing');
+      body.replaceChildren();
+      return;
+    }
+    const rows = C.compare(state.pattern, compareState.b);
+    if (!rows) {
+      status.textContent = t(C.validate(state.pattern) ? 'compare.needA' : 'compare.needB');
+      body.replaceChildren();
+      $('compareTable').hidden = true;
+      return;
+    }
+    $('compareTable').hidden = false;
+    const count = { a: 0, b: 0, same: 0 };
+    for (const r of rows) if (r.winner) count[r.winner]++;
+    status.textContent = t('compare.summary', count);
+    const head = [t('ui.colItem'), 'A', 'B', t('ui.colWinner')];
+    body.replaceChildren(...rows.map((r) => el('tr', { className: r.winner === 'a' || r.winner === 'b' ? `win-${r.winner}` : '' }, [
+      el('th', { scope: 'row', text: t(`compare.${r.key}`) }),
+      el('td', { 'data-label': head[1], text: compareValue(r.key, r.a) }),
+      el('td', { 'data-label': head[2], text: compareValue(r.key, r.b) }),
+      el('td', { 'data-label': head[3], text: t(`compare.winner.${r.winner || 'none'}`) }),
+    ])));
+  }
+
+  function setCompareB(pattern) {
+    compareState.b = pattern.slice();
+    $('compareB').value = C.format(pattern);
+    $('compareError').textContent = '';
+    renderCompare();
+  }
+
+  function renderCompareSaved() {
+    const select = $('compareSaved');
+    const list = loadSaved();
+    select.replaceChildren(el('option', { value: '', text: t('compare.savedNone') }),
+      ...list.map((item, i) => el('option', { value: String(i), text: `${item.name} (${C.format(item.seq)})` })));
+  }
+
+  function bindCompare() {
+    const input = $('compareB');
+    const apply = () => {
+      const r = C.parse(input.value);
+      const err = $('compareError');
+      if (r.error === 'char') err.textContent = t('err.char');
+      else if (r.error === 'repeat') err.textContent = t('err.repeat', { n: r.repeated });
+      else if (r.error === 'short') err.textContent = t('err.short', { n: r.pattern.length });
+      else err.textContent = '';
+      compareState.b = r.error === 'char' || r.error === 'repeat' ? [] : r.pattern;
+      renderCompare();
+    };
+    input.addEventListener('input', (e) => {
+      if (!e.isComposing) apply();
+    });
+    input.addEventListener('compositionend', apply);
+    $('btnCopyA').addEventListener('click', () => {
+      setCompareB(state.pattern);
+      input.focus();
+    });
+    $('compareSaved').addEventListener('change', (e) => {
+      const item = loadSaved()[Number(e.target.value)];
+      if (item) setCompareB(item.seq);
+    });
+  }
+
+  // ---- 端末の設定のチェックリスト（保存しない） ----
+  const CHECKS = ['lines', 'length', 'start', 'pin', 'wipe', 'os', 'real'];
+
+  function buildChecklist() {
+    $('checklist').replaceChildren(...CHECKS.map((id) => {
+      const box = el('input', { type: 'checkbox', id: `check-${id}` });
+      box.addEventListener('change', renderChecklistStatus);
+      return el('li', {}, [el('label', { className: 'check', for: `check-${id}` }, [box, el('span', { id: `check-${id}-text` })])]);
+    }));
+  }
+
+  function renderChecklist() {
+    const F = C.FACTS;
+    const count4 = state.statsReady ? num(C.stats().byLength[4]) : '…';
+    const vars = {
+      lines: { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines }, length: { count4 }, start: F.loge, pin: { pin: F.aviv2017.pin6 },
+      wipe: { full: F.aviv2010.full, seconds: F.abdelrahman2017.seconds },
+    };
+    for (const id of CHECKS) $(`check-${id}-text`).textContent = t(`check.${id}`, vars[id] || {});
+    renderChecklistStatus();
+  }
+
+  function renderChecklistStatus() {
+    const done = CHECKS.filter((id) => $(`check-${id}`).checked).length;
+    $('checklistStatus').textContent = t('check.status', { done, total: CHECKS.length });
+  }
+
   // ---- 保存（localStorage。名前と点の並びだけ） ----
   const SAVE_KEY = 'patternlock-security-trainer-saved';
   const OLD_KEY = 'plst_saved';
@@ -531,6 +639,7 @@
 
   function renderSaved() {
     const list = loadSaved();
+    renderCompareSaved();
     const body = $('savedTable').querySelector('tbody');
     $('savedEmpty').hidden = list.length > 0;
     $('savedTable').hidden = list.length === 0;
@@ -643,6 +752,9 @@
   buildBias();
   bindInput();
   bindSave();
+  bindCompare();
+  buildChecklist();
+  renderChecklist();
   initHelp();
   initTabs();
   globalThis.PatternTheme.init($('btnTheme'), t, () => {

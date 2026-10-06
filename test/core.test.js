@@ -129,3 +129,18 @@ test('文献の値: 始点の割合は合計100%、長さの割合は丸めで99
   assert.deepEqual(Object.keys(C.LENGTH_SHARE).map(Number), [4, 5, 6, 7, 8, 9]);
   for (const k of Object.keys(C.FACTS)) assert.ok(C.SOURCES[k], k);
 });
+
+test('2つのパターンを比べる: 攻撃ごとの値と、どちらが有利か（PS は攻撃によって逆なので有利を付けない）', () => {
+  const rows = C.compare([0, 1, 2, 5, 8], [0, 4, 8, 5]);
+  const by = Object.fromEntries(rows.map((r) => [r.key, r]));
+  assert.deepEqual(rows.map((r) => r.key), ['nodes', 'startShare', 'lengthShare', 'worst', 'waitSeconds', 'points', 'lines', 'overlaps', 'ps']);
+  assert.deepEqual([by.nodes.a, by.nodes.b, by.nodes.winner], [5, 4, 'a']);
+  assert.deepEqual([by.startShare.a, by.startShare.b, by.startShare.winner], [44, 44, 'same']);
+  assert.deepEqual([by.lengthShare.a, by.lengthShare.b, by.lengthShare.winner], [23, 36, 'a'], '選んだ人の割合は小さいほうが有利');
+  assert.deepEqual([by.worst.a, by.worst.b], [8776, 1624]);
+  assert.deepEqual([by.waitSeconds.a, by.waitSeconds.b], [C.waitBeforeAttempt(8776), 128832330]);
+  assert.deepEqual([by.points.a, by.points.b, by.lines.a, by.lines.b], [40, 18, 4, 3]);
+  assert.equal(by.ps.winner, null);
+  assert.equal(C.compare([0, 1, 2], [0, 1, 2, 5]), null, '無効なパターンとは比べない');
+  assert.equal(C.summary([0, 2, 5, 8]), null);
+});

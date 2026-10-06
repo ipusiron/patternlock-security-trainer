@@ -38,7 +38,8 @@ test('画面の要素の id がそろっている（それぞれ1つだけ）', 
   const ids = ['btnTheme', 'pad', 'padCanvas', 'btnUndo', 'btnClear', 'showNumbers', 'patternInput', 'patternError', 'sequence', 'kNodes', 'kLength',
     'kIntersections', 'kOverlaps', 'kKnight', 'kStart', 'startMap', 'lengthBars', 'attackStatus', 'attackCards', 'reference', 'saveName', 'btnSave',
     'saveStatus', 'savedTable', 'savedEmpty', 'btnClearSaved', 'exampleGrid', 'learnBody', 'helpDialog', 'helpTitle', 'helpClose', 'confirmDialog',
-    'confirmYes', 'confirmNo', 'tab-check', 'tab-examples', 'tab-learn', 'panel-check', 'panel-examples', 'panel-learn'];
+    'confirmYes', 'confirmNo', 'tab-check', 'tab-examples', 'tab-learn', 'panel-check', 'panel-examples', 'panel-learn', 'compareA', 'compareB',
+    'compareError', 'btnCopyA', 'compareSaved', 'compareStatus', 'compareTable', 'checklist', 'checklistStatus'];
   for (const id of ids) assert.equal(html.split(`id="${id}"`).length - 1, 1, id);
   const all = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(all).size, all.length);
@@ -48,12 +49,16 @@ test('ボタンには type、入力欄にはラベル、状態の表示は aria-
   for (const m of html.matchAll(/<button\b[^>]*>/g)) assert.match(m[0], /type="button"/, m[0]);
   for (const m of html.matchAll(/<input\b[^>]*id="([^"]+)"/g)) {
     if (m[1] === 'showNumbers') continue;
-    assert.match(html, new RegExp(`<label for="${m[1]}"`), m[1]);
+    assert.match(html, new RegExp(`<label[^>]* for="${m[1]}"`), m[1]);
   }
   assert.match(html, /<label class="check"><input type="checkbox" id="showNumbers" \/>/, 'チェックボックスは label の中');
-  for (const id of ['patternError', 'sequence', 'attackStatus', 'saveStatus']) assert.match(html, new RegExp(`id="${id}"[^>]*aria-live="polite"`), id);
+  for (const id of ['patternError', 'sequence', 'attackStatus', 'saveStatus', 'compareError', 'compareStatus', 'checklistStatus']) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*aria-live="polite"`), id);
+  }
   for (const m of html.matchAll(/<a\b[^>]*target="_blank"[^>]*>/g)) assert.match(m[0], /rel="noopener noreferrer"/, m[0]);
   assert.match(html, /id="patternInput"[^>]*aria-describedby="patternError"/);
+  assert.match(html, /id="compareB"[^>]*aria-describedby="compareError"/);
+  assert.match(html, /<label class="inline-label" for="compareSaved"/);
 });
 
 test('タブは3つ（調べる・パターン例・座学）。タブとパネルが対応し、最初のタブだけが選ばれて見えている', () => {
@@ -75,7 +80,7 @@ test('タブは3つ（調べる・パターン例・座学）。タブとパネ�
 
 test('ヘルプの ? ボタンには、それぞれの話題がある。ヘルプと確認はダイアログ', () => {
   const helps = [...html.matchAll(/class="help-icon" data-help="(\w+)" aria-label="[^"]+"/g)].map((m) => m[1]);
-  assert.deepEqual(helps, ['shape', 'attacks']);
+  assert.deepEqual(helps, ['shape', 'attacks', 'compare']);
   for (const h of helps) assert.match(html, new RegExp(`data-help-topic="${h}" hidden`), h);
   assert.match(html, /<dialog id="helpDialog" class="help-dialog" aria-labelledby="helpTitle">/);
   assert.match(html, /<dialog id="confirmDialog" class="help-dialog" aria-labelledby="confirmTitle">/);

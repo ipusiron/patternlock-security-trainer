@@ -223,6 +223,35 @@
     return lo / a.length;
   }
 
+  // ---- 2つのパターンを比べる ----
+  // 攻撃ごとの値をまとめる（無効なパターンは null）
+  function summary(pattern) {
+    if (validate(pattern)) return null;
+    const f = features(pattern);
+    const worst = shortestFirstWorst(pattern.length);
+    const smudge = smudgeCandidates(pattern);
+    const ps = sunScore(f);
+    return {
+      nodes: f.nodes, startShare: START_SHARE[pattern[0]], lengthShare: LENGTH_SHARE[pattern.length], worst, waitSeconds: waitBeforeAttempt(worst),
+      points: smudge.points, lines: smudge.lines, overlaps: f.overlaps, ps, psClass: sunClass(ps),
+    };
+  }
+  // 比べる行。better: 大きいほうが有利なら 1、小さいほうが有利なら -1、攻撃によって向きが逆なら 0（有利を付けない）
+  const COMPARE_ROWS = [
+    { key: 'nodes', better: 1 }, { key: 'startShare', better: -1 }, { key: 'lengthShare', better: -1 }, { key: 'worst', better: 1 },
+    { key: 'waitSeconds', better: 1 }, { key: 'points', better: 1 }, { key: 'lines', better: 1 }, { key: 'overlaps', better: 1 }, { key: 'ps', better: 0 },
+  ];
+  function compare(a, b) {
+    const A = summary(a);
+    const B = summary(b);
+    if (!A || !B) return null;
+    return COMPARE_ROWS.map(({ key, better }) => {
+      let winner = null;
+      if (better !== 0) winner = A[key] === B[key] ? 'same' : (A[key] - B[key]) * better > 0 ? 'a' : 'b';
+      return { key, a: A[key], b: B[key], winner };
+    });
+  }
+
   // ---- Android の待ち時間 ----
   // AOSP system/gatekeeper/gatekeeper.cpp ComputeRetryTimeout（android-7.0.0_r1 以降、main と同じ）。count は失敗の通算回数
   function gatekeeperTimeoutMs(count) {
@@ -315,7 +344,7 @@
 
   root.PatternCore = {
     SIZE, NODES, MIN_LENGTH, xy, passes, extend, fromTouches, validate, parse, format, relation, unitSegments, startClass, features,
-    sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, smudgeCandidates, sunPercentile,
+    sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, smudgeCandidates, sunPercentile, summary, compare, COMPARE_ROWS,
     gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES, SOURCE_URLS, EXAMPLES,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
