@@ -266,6 +266,7 @@
     aviv2017: { withLines: 64.2, withoutLines: 35.3, pin6: 10.8 },
     ye2017: { attempts: 5, within: 95, complexFirst: 97.5, simpleFirst: 60 },
     abdelrahman2017: { seconds: 30, noOverlap: 100, withOverlap: 16.67, pin: 72 },
+    song2015: { patterns: 101, share: 10, without: 16, with: 48 },
   };
   const SOURCES = {
     loge: 'Marte Dybevik Løge, "Tell Me Who You Are and I Will Tell You Your Unlock Pattern", Master\'s thesis, NTNU, 2015',
@@ -279,7 +280,25 @@
     sun2014: 'Sun, Wang, Zheng, "Dissecting pattern unlock: The effect of pattern strength meter on pattern selection", '
       + 'Journal of Information Security and Applications, 2014',
     golla2019: 'Golla, Rimkus, Aviv, Dürmuth, "On the In-Accuracy and Influence of Android Pattern Strength Meters", NDSS USEC 2019',
+    song2015: 'Song, Cho, Oh, Kim, Huh, "On the Effectiveness of Pattern Lock Strength Meters: Measuring the Strength of Real World Pattern Locks", '
+      + 'CHI 2015',
     aosp: 'Android Open Source Project: LockPatternUtils.java, LockPatternView.java (frameworks/base), gatekeeper.cpp (system/gatekeeper)',
+    androidDocs: 'Android Open Source Project: File-based encryption (Key storage and protection), Gatekeeper',
+  };
+  // 出典のリンク（DOI か、著者・学会の公開ページ）
+  const SOURCE_URLS = {
+    loge: 'https://hdl.handle.net/11250/2380967',
+    uellenbeck: 'https://doi.org/10.1145/2508859.2516700',
+    aviv2010: 'https://www.usenix.org/legacy/events/woot10/tech/full_papers/Aviv.pdf',
+    aviv2015: 'https://doi.org/10.1145/2818000.2818014',
+    aviv2017: 'https://doi.org/10.1145/3134600.3134609',
+    ye2017: 'https://www.ndss-symposium.org/wp-content/uploads/2017/09/ndss2017_03A-5_Ye_paper.pdf',
+    abdelrahman2017: 'https://doi.org/10.1145/3025453.3025461',
+    sun2014: 'https://doi.org/10.1016/j.jisa.2014.10.009',
+    golla2019: 'https://www.ndss-symposium.org/wp-content/uploads/2019/02/usec2019_04-1_Golla_paper.pdf',
+    song2015: 'https://doi.org/10.1145/2702123.2702365',
+    aosp: 'https://android.googlesource.com/platform/system/gatekeeper/+/refs/heads/main/gatekeeper.cpp',
+    androidDocs: 'https://source.android.com/docs/security/features/encryption/file-based',
   };
 
   // 「パターン例」タブの例（どれも有効なパターン。値は画面で計算する）
@@ -297,6 +316,6 @@
   root.PatternCore = {
     SIZE, NODES, MIN_LENGTH, xy, passes, extend, fromTouches, validate, parse, format, relation, unitSegments, startClass, features,
     sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, smudgeCandidates, sunPercentile,
-    gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES, EXAMPLES,
+    gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES, SOURCE_URLS, EXAMPLES,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

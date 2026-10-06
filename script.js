@@ -29,12 +29,13 @@
   }
 
   // 秒を、いちばん読みやすい単位にする
+  const oneDecimal = (x) => String(Number(x.toFixed(1)));
   function duration(sec) {
     if (sec < 60) return t('dur.seconds', { n: Math.round(sec) });
-    if (sec < 3600) return t('dur.minutes', { n: Math.round(sec / 60) });
-    if (sec < 2 * 86400) return t('dur.hours', { n: (sec / 3600).toFixed(1) });
+    if (sec < 3600) return t('dur.minutes', { n: oneDecimal(sec / 60) });
+    if (sec < 2 * 86400) return t('dur.hours', { n: oneDecimal(sec / 3600) });
     if (sec < 365 * 86400) return t('dur.days', { n: num(Math.round(sec / 86400)) });
-    return t('dur.years', { n: (sec / (365 * 86400)).toFixed(1) });
+    return t('dur.years', { n: oneDecimal(sec / (365 * 86400)) });
   }
 
   // 値の大きい順の順位（同じ値は同じ順位）
@@ -296,6 +297,7 @@
       render();
       renderSaved();
       if (examplesBuilt) renderExamples();
+      if (learnBuilt || tabs.current() === 'learn') renderLearn();
     }, 30);
   }
 
@@ -405,6 +407,87 @@
       return el('article', { className: 'example-card' }, [cv, el('div', {}, body)]);
     }));
   }
+
+  // ---- 座学 ----
+  // Gatekeeper の待ち時間を、同じ待ちが続く回数ごとにまとめる（140回目以降は毎回24時間）
+  function gatekeeperRows() {
+    const rows = [];
+    for (let c = 1; c < 140; c++) {
+      const ms = C.gatekeeperTimeoutMs(c);
+      const last = rows[rows.length - 1];
+      if (last && last.ms === ms) last.to = c;
+      else rows.push({ from: c, to: c, ms });
+    }
+    rows.push({ from: 140, to: null, ms: C.gatekeeperTimeoutMs(140) });
+    return rows;
+  }
+
+  function table(headers, rows) {
+    const head = el('tr', {}, headers.map((h) => el('th', { scope: 'col', text: h })));
+    const cell = (c, i) => (i === 0 ? el('th', { scope: 'row', text: c }) : el('td', { 'data-label': headers[i], text: c }));
+    const body = rows.map((cells) => el('tr', {}, cells.map(cell)));
+    return el('div', { className: 'table-wrap' }, [el('table', { className: 'data-table' }, [el('thead', {}, [head]), el('tbody', {}, body)])]);
+  }
+
+  function section(titleKey, children, open = false) {
+    const d = el('details', { className: 'learn-section' }, [el('summary', {}, [el('h3', { text: t(titleKey) })]), ...children]);
+    d.open = open;
+    return d;
+  }
+
+  const list = (keys, vars = {}) => el('ul', { className: 'learn-list' }, keys.map((k) => el('li', { text: t(k, vars[k] || {}) })));
+
+  function renderLearn() {
+    if (!state.statsReady) {
+      $('learnBody').replaceChildren(el('p', { className: 'note', text: t('status.computing') }));
+      return;
+    }
+    const F = C.FACTS;
+    const s = C.stats();
+    const total = num(s.total);
+    const lengths = Object.keys(s.byLength).map(Number);
+    const uniqueShare = pct([...s.byLines.values()].filter((c) => c === 1).reduce((a, c) => a + c, 0) / s.total);
+    const gk = gatekeeperRows().map((r) => [
+      r.to === null ? t('learn.andAfter', { n: r.from }) : r.from === r.to ? t('learn.single', { n: r.from }) : t('learn.range', { from: r.from, to: r.to }),
+      r.ms ? duration(r.ms / 1000) : t('learn.noWait'),
+    ]);
+    const sources = el('ol', { className: 'sources' }, Object.keys(C.SOURCES).map((k) => el('li', {}, [
+      el('a', { href: C.SOURCE_URLS[k], target: '_blank', rel: 'noopener noreferrer', text: C.SOURCES[k] }),
+    ])));
+    $('learnBody').replaceChildren(
+      section('learn.basics.title', [
+        para(t('learn.basics.p1')), para(t('learn.basics.p2')), para(t('learn.basics.p3', { total })),
+        table([t('learn.colLength'), t('learn.colCount'), t('learn.colWorst')],
+          lengths.map((l) => [t('length.row', { n: l }), num(s.byLength[l]), num(C.shortestFirstWorst(l))])),
+      ], true),
+      section('learn.device.title', [
+        para(t('learn.device.p1', { day: C.attemptsWithin(86400), week: C.attemptsWithin(7 * 86400), month: C.attemptsWithin(30 * 86400) })),
+        table([t('learn.colFailures'), t('learn.colWait')], gk),
+        para(t('learn.device.p2')), para(t('learn.device.p3', { total })),
+      ]),
+      section('learn.people.title', [
+        para(t('learn.people.loge', { ...F.loge, patterns: num(F.loge.patterns) })),
+        para(t('learn.people.uellenbeck', { ...F.uellenbeck, g10: F.uellenbeck.guesses10, g30: F.uellenbeck.guesses30 })),
+        para(t('learn.people.aviv', F.aviv2015)),
+      ]),
+      section('learn.attacks.title', [
+        para(t('learn.attacks.smudge', { ...F.aviv2010, unique: uniqueShare })),
+        para(t('learn.attacks.shoulder', { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines, pin: F.aviv2017.pin6 })),
+        para(t('learn.attacks.video', { within: F.ye2017.within, complex: F.ye2017.complexFirst, simple: F.ye2017.simpleFirst })),
+        para(t('learn.attacks.thermal', F.abdelrahman2017)),
+      ]),
+      section('learn.users.title', [list(['learn.users.l1', 'learn.users.l2', 'learn.users.l3', 'learn.users.l4', 'learn.users.l5', 'learn.users.l6',
+        'learn.users.l7'], {
+        'learn.users.l3': { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines }, 'learn.users.l4': { pin: F.aviv2017.pin6 },
+      })]),
+      section('learn.devs.title', [list(['learn.devs.l1', 'learn.devs.l2', 'learn.devs.l3', 'learn.devs.l4', 'learn.devs.l5'], {
+        'learn.devs.l3': { total }, 'learn.devs.l4': F.song2015,
+      })]),
+      section('learn.sources.title', [sources]),
+    );
+    learnBuilt = true;
+  }
+  let learnBuilt = false;
 
   // ---- 保存（localStorage。名前と点の並びだけ） ----
   const SAVE_KEY = 'patternlock-security-trainer-saved';
@@ -549,6 +632,7 @@
     const TT = globalThis.PatternTabs;
     tabs = TT.init(document.querySelector('.tabs'), (name) => {
       if (name === 'examples') renderExamples();
+      if (name === 'learn') renderLearn();
     });
     const first = TT.fromUrl(location.search, location.hash);
     if (first) tabs.select(first);
