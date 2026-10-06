@@ -1,923 +1,657 @@
-/* PatternLock Security Trainer
- * Do NOT enter your real unlock pattern.
- * Android-like rules: 3x3 grid, no repeated nodes, auto-include middle node if skipped.
- *
- * Security measures:
- * - No network communication
- * - No automatic data storage
- * - Client-side only processing
- */
+// PatternLock Security Trainer の画面（DOM だけを扱う）。計算は js/pattern-core.js、文言は js/messages.js
+// 画面に入れる文字列はすべて textContent で入れる（HTML として解釈しない）
+(function () {
+  'use strict';
 
-'use strict';
+  const C = globalThis.PatternCore;
+  const { t } = globalThis.PatternMessages;
+  const $ = (id) => document.getElementById(id);
+  const num = (n) => n.toLocaleString('en-US');
+  const pct = (x) => (Math.floor(x * 1000) / 10).toFixed(1);
 
-const pad = document.getElementById('pad');
-const ctx = pad.getContext('2d');
-const heat = document.getElementById('heat');
-const htx = heat.getContext('2d');
-const radarChart = document.getElementById('radarChart');
-const radarCtx = radarChart.getContext('2d');
-
-const showIdxEl = document.getElementById('showIdx');
-const undoBtn = document.getElementById('undoBtn');
-const clearBtn = document.getElementById('clearBtn');
-
-const kLen = document.getElementById('kLen');
-const kTurns = document.getElementById('kTurns');
-const kXings = document.getElementById('kXings');
-const kAngVar = document.getElementById('kAngVar');
-const kStart = document.getElementById('kStart');
-const kSym = document.getElementById('kSym');
-const patternText = document.getElementById('patternText');
-
-const scoreBar = document.getElementById('scoreBar');
-const scoreVal = document.getElementById('scoreVal');
-const scoreWord = document.getElementById('scoreWord');
-
-const speedSel = document.getElementById('speedSel');
-const guessTries = document.getElementById('guessTries');
-const eta = document.getElementById('eta');
-
-const wLen = document.getElementById('wLen');
-const wTurn = document.getElementById('wTurn');
-const wX = document.getElementById('wX');
-const wAng = document.getElementById('wAng');
-const wStart = document.getElementById('wStart');
-const wSym = document.getElementById('wSym');
-const weightEls = [wLen, wTurn, wX, wAng, wStart, wSym];
-const wLenV = document.getElementById('wLenV');
-const wTurnV = document.getElementById('wTurnV');
-const wXV = document.getElementById('wXV');
-const wAngV = document.getElementById('wAngV');
-const wStartV = document.getElementById('wStartV');
-const wSymV = document.getElementById('wSymV');
-const resetWeights = document.getElementById('resetWeights');
-
-const saveName = document.getElementById('saveName');
-const saveBtn = document.getElementById('saveBtn');
-const savedList = document.getElementById('savedList');
-const clearAllBtn = document.getElementById('clearAllBtn');
-
-// ---- Grid geometry ----
-const GRID = 3;
-const nodes = Array.from({ length: 9 }, (_, i) => ({
-  idx: i,
-  col: i % GRID,
-  row: Math.floor(i / GRID),
-}));
-
-function nodeCenter(idx) {
-  const margin = 40;
-  const cell = (pad.width - margin * 2) / (GRID - 1);
-  const col = idx % GRID;
-  const row = Math.floor(idx / GRID);
-  return [margin + col * cell, margin + row * cell];
-}
-
-// Pairs that require a middle node (Android rule)
-const middleMap = new Map();
-// Straight lines
-middleMap.set(key(0,2), 1); middleMap.set(key(2,0), 1);
-middleMap.set(key(3,5), 4); middleMap.set(key(5,3), 4);
-middleMap.set(key(6,8), 7); middleMap.set(key(8,6), 7);
-middleMap.set(key(0,6), 3); middleMap.set(key(6,0), 3);
-middleMap.set(key(1,7), 4); middleMap.set(key(7,1), 4);
-middleMap.set(key(2,8), 5); middleMap.set(key(8,2), 5);
-// Diagonals
-middleMap.set(key(0,8), 4); middleMap.set(key(8,0), 4);
-middleMap.set(key(2,6), 4); middleMap.set(key(6,2), 4);
-
-function key(a,b){ return `${a}-${b}`; }
-
-// ---- Input handling ----
-let pattern = [];       // array of node indices in order
-let drawing = false;
-
-function nearestNode(x, y) {
-  // Returns nearest node idx if within radius
-  let best = -1, bestD = Infinity;
-  nodes.forEach(n => {
-    const [cx, cy] = nodeCenter(n.idx);
-    const d2 = (cx - x) ** 2 + (cy - y) ** 2;
-    if (d2 < bestD) { bestD = d2; best = n.idx; }
-  });
-  const r = 28 ** 2; // hit radius^2
-  return bestD <= r ? best : -1;
-}
-
-function addNodeToPattern(nextIdx) {
-  if (nextIdx < 0) return;
-  if (pattern.length === 0) {
-    pattern.push(nextIdx);
-    redraw();
-    evaluate();
-    return;
-  }
-  const last = pattern[pattern.length - 1];
-  if (last === nextIdx) return;
-  if (pattern.includes(nextIdx)) return; // no repeats
-
-  const mid = middleMap.get(key(last, nextIdx));
-  if (mid != null && !pattern.includes(mid)) {
-    pattern.push(mid);
-  }
-  if (!pattern.includes(nextIdx)) {
-    pattern.push(nextIdx);
-  }
-  redraw();
-  evaluate();
-}
-
-function onPointerStart(e) {
-  drawing = true;
-  const pos = getXY(e);
-  addNodeToPattern(nearestNode(pos.x, pos.y));
-}
-function onPointerMove(e) {
-  if (!drawing) return;
-  const pos = getXY(e);
-  addNodeToPattern(nearestNode(pos.x, pos.y));
-}
-function onPointerEnd() {
-  drawing = false;
-}
-
-function getXY(e) {
-  const rect = pad.getBoundingClientRect();
-  const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  const py = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-  const scaleX = pad.width / rect.width;
-  const scaleY = pad.height / rect.height;
-  return { x: px * scaleX, y: py * scaleY };
-}
-
-pad.addEventListener('pointerdown', onPointerStart);
-pad.addEventListener('pointermove', onPointerMove);
-pad.addEventListener('pointerup', onPointerEnd);
-pad.addEventListener('pointerleave', onPointerEnd);
-pad.addEventListener('touchstart', e => { onPointerStart(e); e.preventDefault(); }, { passive: false });
-pad.addEventListener('touchmove', e => { onPointerMove(e); e.preventDefault(); }, { passive: false });
-pad.addEventListener('touchend', e => { onPointerEnd(e); e.preventDefault(); }, { passive: false });
-
-undoBtn.addEventListener('click', () => {
-  pattern.pop();
-  redraw(); evaluate();
-});
-clearBtn.addEventListener('click', () => {
-  pattern = [];
-  redraw(); evaluate();
-});
-
-showIdxEl.addEventListener('change', redraw);
-
-// ---- Drawing ----
-function redraw() {
-  ctx.clearRect(0,0,pad.width,pad.height);
-
-  const themeColors = getThemeColors();
-
-  // grid dots
-  for (let i=0;i<9;i++){
-    const [x,y] = nodeCenter(i);
-    ctx.fillStyle = themeColors.nodeOuter;
-    ctx.beginPath(); ctx.arc(x,y,18,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = themeColors.heatmapStroke;
-    ctx.lineWidth = 2; ctx.stroke();
-
-    // inner dot
-    ctx.fillStyle = themeColors.nodeInner;
-    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
-
-    if (showIdxEl.checked) {
-      // Text with appropriate contrast - no background circle needed
-      ctx.fillStyle = themeColors.nodeText;
-      ctx.font = 'bold 12px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(i), x, y-8);
-      ctx.textAlign = 'start'; // reset
+  function el(tag, props = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'text') node.textContent = v;
+      else if (k === 'className') node.className = v;
+      else node.setAttribute(k, v);
     }
+    for (const c of children) node.append(c);
+    return node;
   }
 
-  // lines
-  if (pattern.length >= 2) {
-    ctx.strokeStyle = themeColors.lineColor;
-    ctx.lineWidth = 6; ctx.lineJoin = 'round';
-    ctx.beginPath();
-    const [sx, sy] = nodeCenter(pattern[0]);
-    ctx.moveTo(sx, sy);
-    for (let i=1;i<pattern.length;i++){
-      const [x,y] = nodeCenter(pattern[i]);
-      ctx.lineTo(x,y);
+  // ---- 状態 ----
+  // pattern: いまのパターン、steps: 1手ごとに足した点の数（「1手戻す」で、自動で入った点ごと戻す）
+  const state = { pattern: [], steps: [], drawing: false, pointer: null, statsReady: false };
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // 秒を、いちばん読みやすい単位にする
+  const oneDecimal = (x) => String(Number(x.toFixed(1)));
+  function duration(sec) {
+    if (sec < 60) return t('dur.seconds', { n: Math.round(sec) });
+    if (sec < 3600) return t('dur.minutes', { n: oneDecimal(sec / 60) });
+    if (sec < 2 * 86400) return t('dur.hours', { n: oneDecimal(sec / 3600) });
+    if (sec < 365 * 86400) return t('dur.days', { n: num(Math.round(sec / 86400)) });
+    return t('dur.years', { n: oneDecimal(sec / (365 * 86400)) });
+  }
+
+  // 値の大きい順の順位（同じ値は同じ順位）
+  const rankOf = (values, v) => values.filter((x) => x > v).length + 1;
+
+  // ---- パッド ----
+  const pad = $('pad');
+  const canvas = $('padCanvas');
+  const nodeButtons = [];
+
+  function buildPad() {
+    for (let i = 0; i < C.NODES; i++) {
+      const [col, row] = C.xy(i);
+      const b = el('button', { type: 'button', className: 'node', 'data-node': String(i), 'aria-pressed': 'false' }, [
+        el('span', { className: 'node-num', text: String(i) }),
+      ]);
+      b.style.left = `${(col * 2 + 1) * (100 / 6)}%`;
+      b.style.top = `${(row * 2 + 1) * (100 / 6)}%`;
+      // キーボード（Enter・Space）で押したときだけ、点を順に足す。ポインターは pad 側で扱う
+      b.addEventListener('click', (e) => {
+        if (e.detail === 0) addNode(i);
+      });
+      nodeButtons.push(b);
+      pad.append(b);
     }
-    ctx.stroke();
+    labelNodes();
   }
 
-  // selected nodes highlight
-  pattern.forEach(idx => {
-    const [x,y] = nodeCenter(idx);
-    ctx.fillStyle = '#3aa0ff';
-    ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#99c6ff';
-    ctx.lineWidth = 2; ctx.stroke();
-  });
-}
-
-// ---- Analytics ----
-function vec(a, b) {
-  const [ax, ay] = nodeCenter(a);
-  const [bx, by] = nodeCenter(b);
-  return [bx-ax, by-ay];
-}
-function dot([ax,ay],[bx,by]){ return ax*bx + ay*by; }
-function norm([ax,ay]){ return Math.hypot(ax,ay) || 1; }
-function angleBetween(u, v) {
-  const d = dot(u,v) / (norm(u)*norm(v));
-  const c = Math.min(1, Math.max(-1, d));
-  return Math.acos(c); // [0, π]
-}
-function isCorner(idx){ return [0,2,6,8].includes(idx); }
-function isEdge(idx){ return [1,3,5,7].includes(idx); }
-function isCenter(idx){ return idx===4; }
-
-function countTurns(seq){
-  if (seq.length < 3) return 0;
-  let turns = 0;
-  for (let i=0;i<seq.length-2;i++){
-    const u = vec(seq[i], seq[i+1]);
-    const v = vec(seq[i+1], seq[i+2]);
-    const ang = angleBetween(u,v);
-    if (ang > Math.PI/18) turns++; // >10°
+  function labelNodes() {
+    nodeButtons.forEach((b, i) => b.setAttribute('aria-label', t('node.label', { n: i, pos: t(`pos.${i}`) })));
   }
-  return turns;
-}
 
-function angleVariance(seq){
-  if (seq.length < 3) return 0;
-  const angles = [];
-  for (let i=0;i<seq.length-2;i++){
-    const u = vec(seq[i], seq[i+1]);
-    const v = vec(seq[i+1], seq[i+2]);
-    angles.push(angleBetween(u,v));
+  // pad の中の座標（CSS ピクセル）での点の中心
+  function nodeCenter(i, w) {
+    const [col, row] = C.xy(i);
+    return [((col * 2 + 1) * w) / 6, ((row * 2 + 1) * w) / 6];
   }
-  const m = angles.reduce((a,b)=>a+b,0)/angles.length;
-  const v = angles.reduce((s,a)=>s+(a-m)*(a-m),0)/angles.length;
-  return v;
-}
 
-function intersects(a,b,c,d){
-  // Generic segment intersection excluding shared endpoints
-  const [a1x,a1y] = nodeCenter(a);
-  const [a2x,a2y] = nodeCenter(b);
-  const [b1x,b1y] = nodeCenter(c);
-  const [b2x,b2y] = nodeCenter(d);
-
-  function ccw(ax,ay,bx,by,cx,cy){ return (cy-ay)*(bx-ax) > (by-ay)*(cx-ax); }
-  if (a===c||a===d||b===c||b===d) return false;
-
-  const A = ccw(a1x,a1y,b1x,b1y,b2x,b2y);
-  const B = ccw(a2x,a2y,b1x,b1y,b2x,b2y);
-  const C = ccw(a1x,a1y,a2x,a2y,b1x,b1y);
-  const D = ccw(a1x,a1y,a2x,a2y,b2x,b2y);
-  return (A !== B) && (C !== D);
-}
-
-function countIntersections(seq){
-  if (seq.length < 4) return 0;
-  let count = 0;
-  for (let i=0;i<seq.length-1;i++){
-    for (let j=i+2;j<seq.length-1;j++){
-      if (i===0 && j===seq.length-2) continue; // skip first-last adjacency
-      const a = seq[i], b = seq[i+1], c = seq[j], d = seq[j+1];
-      if (intersects(a,b,c,d)) count++;
+  function hitNode(x, y) {
+    const w = pad.clientWidth;
+    const r = w * 0.11;
+    for (let i = 0; i < C.NODES; i++) {
+      const [cx, cy] = nodeCenter(i, w);
+      if ((cx - x) ** 2 + (cy - y) ** 2 <= r * r) return i;
     }
-  }
-  return count;
-}
-
-function symmetryScore(seq){
-  // Reflection checks
-  const mapH = new Map([[0,2],[1,1],[2,0],[3,5],[4,4],[5,3],[6,8],[7,7],[8,6]]);
-  const mapV = new Map([[0,6],[1,7],[2,8],[3,3],[4,4],[5,5],[6,0],[7,1],[8,2]]);
-  const mapD1= new Map([[0,0],[1,3],[2,6],[3,1],[4,4],[5,7],[6,2],[7,5],[8,8]]);
-  const mapD2= new Map([[0,8],[1,5],[2,2],[3,7],[4,4],[5,1],[6,6],[7,3],[8,0]]);
-
-  function reflEqual(map){
-    const r = seq.map(i => map.get(i));
-    return arraysEqual(seq, r) || arraysEqual(seq, r.slice().reverse());
-  }
-  return (reflEqual(mapH)||reflEqual(mapV)||reflEqual(mapD1)||reflEqual(mapD2)) ? -1 : 0;
-}
-
-function arraysEqual(a,b){
-  if (a.length !== b.length) return false;
-  for (let i=0;i<a.length;i++) if (a[i]!==b[i]) return false;
-  return true;
-}
-
-function startClass(idx){
-  if (isCenter(idx)) return '中央';
-  if (isCorner(idx)) return '角';
-  if (isEdge(idx)) return '辺';
-  return 'unknown';
-}
-
-// ---- Scoring model ----
-function computeScore(features, weights){
-  // より寛容な正規化（より高いスコアが出やすく）
-  const lenNorm = Math.max(0, Math.min(1, (features.length - 4) / 5));
-  const turnNorm = Math.max(0, Math.min(1, features.turns / 6)); // 6ターンで満点に
-  const xNorm = Math.max(0, Math.min(1, features.intersections / 3)); // 3交差で満点に
-  const angNorm = Math.max(0, Math.min(1, features.angleVar / 2.0)); // より低い閾値
-  const startPen = (features.start === '角') ? 1 : (features.start === '辺' ? 0.6 : 0);
-  const symPen = (features.symmetry < 0) ? 1 : 0;
-
-  const { wLen, wTurn, wX, wAng, wStart, wSym } = weights;
-
-  // ベーススコアを30に設定（基本的な4点パターンでも30点）
-  const baseScore = 30;
-  const bonusPoints =
-    (wLen * lenNorm * 25) +      // 長さボーナス: 最大25点
-    (wTurn * turnNorm * 20) +    // ターンボーナス: 最大20点
-    (wX * xNorm * 20) +          // 交差ボーナス: 最大20点
-    (wAng * angNorm * 15);       // 角度多様性: 最大15点
-
-  const penalties =
-    (wStart * startPen * 10) +   // 開始点ペナルティ: 最大-10点
-    (wSym * symPen * 10);        // 対称性ペナルティ: 最大-10点
-
-  let finalScore = baseScore + bonusPoints - penalties;
-  finalScore = Math.max(5, Math.min(100, Math.round(finalScore))); // 最低5点保証
-  return finalScore;
-}
-
-function estimateTries(score){
-  const minExp = 1, maxExp = 8;
-  const exp = minExp + (score/100)*(maxExp - minExp);
-  return Math.round(10 ** exp);
-}
-function fmtInt(n){ return n.toLocaleString('en-US'); }
-function fmtETA(tries, perSec){
-  const sec = tries / perSec;
-  if (sec < 60) return `${sec.toFixed(1)}秒`;
-  const m = Math.floor(sec/60);
-  const s = Math.round(sec%60);
-  if (m < 60) return `${m}分 ${s}秒`;
-  const h = Math.floor(m/60); const mm = m%60;
-  if (h < 48) return `${h}時間 ${mm}分`;
-  const d = Math.floor(h/24);
-  return `${d}日 ${h%24}時間`;
-}
-
-// ---- Radar Chart ----
-function drawRadarChart(features) {
-  const canvas = radarChart;
-  const ctx = radarCtx;
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  const radius = Math.min(centerX, centerY) - 50; // ラベル用のマージンを増加
-
-  // Clear canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Get theme colors
-  const themeColors = getThemeColors();
-
-  // Check if pattern exists
-  const hasPattern = features.length > 0;
-
-  // Data points (normalized to 0-1)
-  const data = [
-    hasPattern ? Math.max(0, Math.min(1, (features.length - 4) / 5)) : 0, // Length
-    hasPattern ? Math.max(0, Math.min(1, features.turns / 6)) : 0, // Turns
-    hasPattern ? Math.max(0, Math.min(1, features.intersections / 3)) : 0, // Intersections
-    hasPattern ? Math.max(0, Math.min(1, features.angleVar / 2)) : 0, // Angle Var
-    hasPattern ? (features.start === '中央' ? 1 : (features.start === '辺' ? 0.6 : (features.start === '角' ? 0.3 : 0))) : 0, // Start
-    hasPattern ? (features.symmetry >= 0 ? 0.2 : 0.8) : 0 // Symmetry
-  ];
-
-  const labels = ['長さ', 'ターン数', '交差数', '角度多様性', '開始点', '対称性'];
-  const colors = ['#ff6b9d', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8'];
-
-  // Draw grid circles
-  ctx.strokeStyle = themeColors.radarGrid;
-  ctx.lineWidth = 1;
-  for (let i = 1; i <= 5; i++) {
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
-    ctx.stroke();
+    return -1;
   }
 
-  // Draw axes
-  const angleStep = (Math.PI * 2) / data.length;
-  for (let i = 0; i < data.length; i++) {
-    const angle = i * angleStep - Math.PI / 2;
-    const x = centerX + Math.cos(angle) * radius;
-    const y = centerY + Math.sin(angle) * radius;
-
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-
-    // Draw labels between outermost and second ring
-    const labelDistance = radius + (radius / 5) * 0.5; // 外周と4番目の円の中間
-    const labelX = centerX + Math.cos(angle) * labelDistance;
-    const labelY = centerY + Math.sin(angle) * labelDistance;
-
-    ctx.fillStyle = colors[i];
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Add background for better readability
-    const textMetrics = ctx.measureText(labels[i]);
-    const bgWidth = textMetrics.width + 4;
-    const bgHeight = 12;
-
-    ctx.fillStyle = themeColors.radarLabelBg;
-    ctx.fillRect(labelX - bgWidth/2, labelY - bgHeight/2, bgWidth, bgHeight);
-
-    ctx.fillStyle = themeColors.radarLabelText;
-    ctx.fillText(labels[i], labelX, labelY);
+  function localXY(e) {
+    const rect = pad.getBoundingClientRect();
+    return [e.clientX - rect.left, e.clientY - rect.top];
   }
 
-  // Draw data polygon only if pattern exists
-  if (hasPattern && data.some(d => d > 0)) {
-    ctx.beginPath();
-    for (let i = 0; i < data.length; i++) {
-      const angle = i * angleStep - Math.PI / 2;
-      const distance = data[i] * radius;
-      const x = centerX + Math.cos(angle) * distance;
-      const y = centerY + Math.sin(angle) * distance;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.closePath();
-
-    // Fill
-    ctx.fillStyle = 'rgba(110, 168, 254, 0.2)';
-    ctx.fill();
-
-    // Stroke
-    ctx.strokeStyle = '#6ea8fe';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Draw data points
-    for (let i = 0; i < data.length; i++) {
-      const angle = i * angleStep - Math.PI / 2;
-      const distance = data[i] * radius;
-      const x = centerX + Math.cos(angle) * distance;
-      const y = centerY + Math.sin(angle) * distance;
-
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = colors[i];
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  }
-}
-
-// ---- Heatmap ----
-function drawHeat(seq){
-  htx.clearRect(0,0,heat.width,heat.height);
-  const counts = Array(9).fill(0);
-  seq.forEach(i => counts[i]++);
-  const max = Math.max(1, ...counts);
-  for (let i=0;i<9;i++){
-    const x = (i%3), y = Math.floor(i/3);
-    const cw = heat.width/3, ch = heat.height/3;
-    const alpha = counts[i]/max;
-    htx.fillStyle = `rgba(52,199,89,${alpha*0.85})`;
-    htx.fillRect(x*cw, y*ch, cw-2, ch-2);
-
-    const themeColors = getThemeColors();
-    htx.strokeStyle = themeColors.heatmapStroke;
-    htx.lineWidth = 1;
-    htx.strokeRect(x*cw+0.5, y*ch+0.5, cw-1, ch-1);
-  }
-}
-
-// ---- Evaluate current pattern ----
-function evaluate(){
-  patternText.textContent = pattern.length ? `\u30b7\u30fc\u30b1\u30f3\u30b9: [ ${pattern.join(' → ')} ]` : '\u30b7\u30fc\u30b1\u30f3\u30b9: –';
-
-  const features = {
-    length: pattern.length,
-    turns: countTurns(pattern),
-    intersections: countIntersections(pattern),
-    angleVar: angleVariance(pattern),
-    start: pattern.length ? startClass(pattern[0]) : '–',
-    symmetry: pattern.length ? symmetryScore(pattern) : 0,
-  };
-
-  kLen.textContent = features.length || '–';
-  kTurns.textContent = features.turns || 0;
-  kXings.textContent = features.intersections || 0;
-  kAngVar.textContent = features.angleVar ? features.angleVar.toFixed(2) : '0.00';
-  kStart.textContent = features.start;
-  kSym.textContent = (features.symmetry < 0) ? 'High' : 'Low';
-
-  const weights = {
-    wLen: parseFloat(wLen.value),
-    wTurn: parseFloat(wTurn.value),
-    wX: parseFloat(wX.value),
-    wAng: parseFloat(wAng.value),
-    wStart: parseFloat(wStart.value),
-    wSym: parseFloat(wSym.value),
-  };
-  const score = (features.length >= 4) ? computeScore(features, weights) : 0;
-  scoreVal.textContent = String(score);
-
-  let word = '非常に弱い', cls = 'score-weak';
-  if (score >= 75) { word = '強い'; cls = 'score-strong'; }
-  else if (score >= 50) { word = '普通'; cls = 'score-med'; }
-  else if (score >= 25) { word = '弱い'; cls = 'score-weak'; }
-  scoreWord.textContent = word;
-  scoreWord.className = cls;
-
-  const fill = scoreBar.querySelector('.fill');
-  if (fill) fill.style.width = `${score}%`;
-
-  if (features.length >= 4){
-    const tries = estimateTries(score);
-    guessTries.textContent = fmtInt(tries);
-    const perSec = parseInt(speedSel.value, 10);
-    eta.textContent = fmtETA(tries, perSec);
-  } else {
-    guessTries.textContent = '–';
-    eta.textContent = '–';
-  }
-
-  drawRadarChart(features);
-  drawHeat(pattern);
-}
-
-// reflect range values
-function syncWeightLabels(){
-  wLenV.textContent = wLen.value;
-  wTurnV.textContent = wTurn.value;
-  wXV.textContent = wX.value;
-  wAngV.textContent = wAng.value;
-  wStartV.textContent = wStart.value;
-  wSymV.textContent = wSym.value;
-}
-weightEls.forEach(el => el.addEventListener('input', () => { syncWeightLabels(); evaluate(); }));
-resetWeights.addEventListener('click', () => {
-  wLen.value = 1.0; wTurn.value = 1.0; wX.value = 1.0; wAng.value = 1.0; wStart.value = -1.0; wSym.value = -1.0;
-  syncWeightLabels(); evaluate();
-});
-speedSel.addEventListener('change', evaluate);
-
-// ---- Save (localStorage only) ----
-const LS_KEY = 'plst_saved';
-function loadSaved(){
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-function saveSaved(arr){
-  try {
-    // セキュリティ検証：保存するデータのサニタイゼーション
-    const sanitizedArr = arr.map(item => ({
-      name: String(item.name || '').slice(0, 50), // 最大50文字
-      seq: Array.isArray(item.seq) ? item.seq.filter(n => Number.isInteger(n) && n >= 0 && n <= 8) : [],
-      len: Number.isInteger(item.len) && item.len >= 4 && item.len <= 9 ? item.len : 0,
-      score: Number.isFinite(item.score) && item.score >= 0 && item.score <= 100 ? item.score : 0
-    })).filter(item => item.seq.length >= 4); // 有効なパターンのみ保存
-
-    localStorage.setItem(LS_KEY, JSON.stringify(sanitizedArr));
-  } catch (e) {
-    console.warn('Failed to save pattern data:', e.message);
-  }
-}
-function renderSaved(){
-  const data = loadSaved();
-  savedList.innerHTML = '';
-  if (!data.length){
-    const p = document.createElement('p');
-    p.className = 'small'; p.textContent = '\u4fdd\u5b58\u3055\u308c\u305f\u30d1\u30bf\u30fc\u30f3\u306f\u3042\u308a\u307e\u305b\u3093';
-    savedList.appendChild(p);
-    return;
-  }
-  data.forEach((item, idx) => {
-    const row = document.createElement('div');
-    row.className = 'saved-item';
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.textContent = item.name;
-    const meta = document.createElement('div');
-    meta.className = 'meta mono';
-    meta.textContent = `\u9577\u3055=${item.len} \u30b9\u30b3\u30a2=${item.score}`;
-
-    const btns = document.createElement('div');
-    const loadB = document.createElement('button');
-    loadB.className = 'btn btn-secondary';
-    loadB.textContent = '読み込み';
-    loadB.onclick = () => {
-      pattern = item.seq.slice();
-      redraw(); evaluate();
-    };
-    const delB = document.createElement('button');
-    delB.className = 'btn btn-secondary';
-    delB.textContent = '削除';
-    delB.onclick = () => {
-      const now = loadSaved();
-      now.splice(idx,1);
-      saveSaved(now);
-      renderSaved();
-    };
-    btns.appendChild(loadB);
-    btns.appendChild(delB);
-
-    row.appendChild(title);
-    row.appendChild(meta);
-    row.appendChild(btns);
-    savedList.appendChild(row);
-  });
-}
-
-saveBtn.addEventListener('click', () => {
-  if (pattern.length < 4) { alert('\u30d1\u30bf\u30fc\u30f3\u306f4\u70b9\u4ee5\u4e0a\u5fc5\u8981\u3067\u3059'); return; }
-  let name = (saveName.value || '').trim();
-  if (!name) {
-    const data = loadSaved();
-    const existingNumbers = data
-      .map(item => {
-        const match = item.name && item.name.match(/^パターン\s*(\d+)$/);
-        return match ? parseInt(match[1]) : 0;
-      })
-      .filter(n => n > 0);
-    const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : data.length + 1;
-    name = `パターン ${nextNumber}`;
-  }
-  const features = {
-    length: pattern.length,
-    turns: countTurns(pattern),
-    intersections: countIntersections(pattern),
-    angleVar: angleVariance(pattern),
-    start: pattern.length ? startClass(pattern[0]) : '–',
-    symmetry: pattern.length ? symmetryScore(pattern) : 0,
-  };
-  const weights = {
-    wLen: parseFloat(wLen.value),
-    wTurn: parseFloat(wTurn.value),
-    wX: parseFloat(wX.value),
-    wAng: parseFloat(wAng.value),
-    wStart: parseFloat(wStart.value),
-    wSym: parseFloat(wSym.value),
-  };
-  const score = computeScore(features, weights);
-  const data = loadSaved();
-  data.push({ name, seq: pattern.slice(), len: pattern.length, score });
-  saveSaved(data);
-  saveName.value = '';
-  renderSaved();
-});
-
-clearAllBtn.addEventListener('click', () => {
-  if (confirm('保存されたすべてのパターンを削除しますか？')) {
-    localStorage.removeItem(LS_KEY);
-    renderSaved();
-  }
-});
-
-// ---- Init ----
-function init(){
-  // メータの塗りつぶし用レイヤーを生成
-  if (!scoreBar.querySelector('.fill')){
-    const fill = document.createElement('div');
-    fill.className = 'fill';
-    scoreBar.insertBefore(fill, scoreBar.firstChild);
-  }
-
-  syncWeightLabels();
-  redraw();
-  evaluate();
-  renderSaved();
-}
-
-// Tab switching functionality
-const tabButtons = document.querySelectorAll('.tab-btn');
-const tabContents = document.querySelectorAll('.tab-content');
-
-tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const targetTab = btn.dataset.tab;
-
-    // Update active button
-    tabButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    // Show/hide tab contents
-    tabContents.forEach(content => {
-      if (content.id === `${targetTab}-tab`) {
-        content.style.display = 'block';
-      } else {
-        content.style.display = 'none';
-      }
+  function bindPad() {
+    pad.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      state.drawing = true;
+      state.fresh = true;
+      pad.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      track(e);
     });
+    pad.addEventListener('pointermove', (e) => {
+      if (state.drawing) track(e);
+    });
+    const end = () => {
+      if (!state.drawing) return;
+      state.drawing = false;
+      state.pointer = null;
+      drawPad();
+    };
+    pad.addEventListener('pointerup', end);
+    pad.addEventListener('pointercancel', end);
+  }
 
-    // If switching to examples tab, draw the example patterns
-    if (targetTab === 'examples') {
-      drawExamplePatterns();
+  // なぞっている位置の点を足す。新しく押したときは、最初の点に触れた時点でパターンを描き直す（Android と同じ）
+  function track(e) {
+    const [x, y] = localXY(e);
+    state.pointer = [x, y];
+    const n = hitNode(x, y);
+    if (n >= 0) {
+      if (state.fresh) {
+        state.fresh = false;
+        state.pattern = [];
+        state.steps = [];
+      }
+      addNode(n);
     }
-  });
-});
+    drawPad();
+  }
 
-// Draw example patterns on mini canvases - completely redesigned
-function drawExamplePatterns() {
-  const miniPads = document.querySelectorAll('.mini-pad');
+  function addNode(n) {
+    const added = C.extend(state.pattern, n);
+    if (!added.length) return;
+    state.steps.push(added.length);
+    changed(true);
+  }
 
-  miniPads.forEach(canvas => {
-    const patternStr = canvas.dataset.pattern;
-    if (!patternStr) return;
+  function setPattern(pattern) {
+    state.pattern = pattern.slice();
+    state.steps = pattern.map(() => 1);
+    changed(true);
+  }
 
-    const pattern = patternStr.split(',').map(n => parseInt(n));
+  // パッド・ボタン・文字のどれから変えても、入力欄の文字を合わせて全体を描き直す
+  function changed(syncInput) {
+    if (syncInput !== false) {
+      $('patternInput').value = C.format(state.pattern);
+      $('patternError').textContent = '';
+    }
+    render();
+  }
+
+  function drawPad() {
+    const w = pad.clientWidth;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(w * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(w * dpr);
+    }
     const ctx = canvas.getContext('2d');
-
-    // Canvas settings
-    const width = 90;
-    const height = 90;
-    canvas.width = width;
-    canvas.height = height;
-
-    const margin = 15;
-    const gridSize = width - margin * 2;
-    const cellSize = gridSize / 2; // For 3x3 grid, we need 2 intervals
-
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-
-    // Get node position (0-8 to x,y coordinates)
-    function getNodePosition(idx) {
-      const col = idx % 3;
-      const row = Math.floor(idx / 3);
-      return {
-        x: margin + col * cellSize,
-        y: margin + row * cellSize
-      };
-    }
-
-    // Apply Android pattern rules (middle node insertion)
-    function expandPatternWithMiddleNodes(inputPattern) {
-      if (inputPattern.length < 2) return inputPattern;
-
-      const expanded = [inputPattern[0]];
-      const used = new Set([inputPattern[0]]);
-
-      for (let i = 1; i < inputPattern.length; i++) {
-        const prev = inputPattern[i-1];
-        const curr = inputPattern[i];
-
-        // Calculate if there's a middle node that should be auto-inserted
-        const prevPos = getNodePosition(prev);
-        const currPos = getNodePosition(curr);
-
-        // Find middle node if skipping across one
-        const midCol = Math.round((prevPos.x + currPos.x) / 2);
-        const midRow = Math.round((prevPos.y + currPos.y) / 2);
-
-        // Convert back to index
-        const midX = (midCol - margin) / cellSize;
-        const midY = (midRow - margin) / cellSize;
-
-        if (Number.isInteger(midX) && Number.isInteger(midY) &&
-            midX >= 0 && midX <= 2 && midY >= 0 && midY <= 2) {
-          const midIdx = midY * 3 + midX;
-          if (midIdx !== prev && midIdx !== curr && !used.has(midIdx)) {
-            expanded.push(midIdx);
-            used.add(midIdx);
-          }
-        }
-
-        expanded.push(curr);
-        used.add(curr);
-      }
-
-      return expanded;
-    }
-
-    const expandedPattern = expandPatternWithMiddleNodes(pattern);
-
-    // 1. Draw grid dots (all 9 positions)
-    const themeColors = getThemeColors();
-    for (let i = 0; i < 9; i++) {
-      const pos = getNodePosition(i);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, w);
+    const p = state.pattern;
+    ctx.strokeStyle = cssVar('--pad-line');
+    ctx.lineWidth = Math.max(4, w * 0.02);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (p.length) {
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = themeColors.gridDot;
-      ctx.fill();
-      ctx.strokeStyle = themeColors.gridDotStroke;
-      ctx.lineWidth = 1;
+      const [sx, sy] = nodeCenter(p[0], w);
+      ctx.moveTo(sx, sy);
+      for (let i = 1; i < p.length; i++) ctx.lineTo(...nodeCenter(p[i], w));
+      if (state.drawing && state.pointer) ctx.lineTo(...state.pointer);
       ctx.stroke();
     }
-
-    // 2. Draw pattern lines
-    if (expandedPattern.length > 1) {
-      ctx.beginPath();
-      ctx.strokeStyle = '#6ea8fe';
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      const startPos = getNodePosition(expandedPattern[0]);
-      ctx.moveTo(startPos.x, startPos.y);
-
-      for (let i = 1; i < expandedPattern.length; i++) {
-        const pos = getNodePosition(expandedPattern[i]);
-        ctx.lineTo(pos.x, pos.y);
-      }
-
-      ctx.stroke();
-    }
-
-    // 3. Draw active nodes (pattern nodes)
-    expandedPattern.forEach(nodeIdx => {
-      const pos = getNodePosition(nodeIdx);
-
-      // Outer circle (active node)
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
-      ctx.fillStyle = '#6ea8fe';
-      ctx.fill();
-
-      // Inner circle (highlight)
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#4d8fff';
-      ctx.fill();
-
-      // White border
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+    nodeButtons.forEach((b, i) => {
+      b.setAttribute('aria-pressed', String(p.includes(i)));
+      b.classList.toggle('start', p[0] === i);
     });
-  });
-}
-
-// Theme-aware color helpers
-function getThemeColors() {
-  const isLight = document.body.getAttribute('data-theme') === 'light';
-  return {
-    gridDot: isLight ? '#adb5bd' : '#555670',
-    gridDotStroke: isLight ? '#868e96' : '#777790',
-    heatmapStroke: isLight ? '#ced4da' : '#2b3150',
-    // Main canvas colors
-    nodeOuter: isLight ? '#e9ecef' : '#0f1220',
-    nodeInner: isLight ? '#0d6efd' : '#2b6df8',
-    nodeText: isLight ? '#212529' : '#9fb3ff',
-    lineColor: isLight ? '#0d6efd' : '#76a7ff',
-    // Radar chart colors
-    radarGrid: isLight ? '#ced4da' : '#2a2f45',
-    radarLabelBg: isLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.7)',
-    radarLabelText: isLight ? '#495057' : '#ffffff',
-  };
-}
-
-// Theme toggle functionality
-function initThemeToggle() {
-  const themeToggle = document.getElementById('themeToggle');
-  const body = document.body;
-
-  // Load saved theme or default to dark
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  if (savedTheme === 'light') {
-    body.setAttribute('data-theme', 'light');
   }
 
-  // Theme toggle event listener
-  themeToggle.addEventListener('click', () => {
-    const currentTheme = body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  // ---- 形の特徴と人の選び方 ----
+  function buildBias() {
+    const max = Math.max(...C.START_SHARE);
+    $('startMap').replaceChildren(...C.START_SHARE.map((share, i) => {
+      const fill = el('span', { className: 'start-fill' });
+      fill.style.height = `${(share / max) * 100}%`;
+      const label = el('span', { className: 'start-label', text: t('share.value', { n: share }) });
+      return el('div', { className: 'start-cell', 'data-node': String(i) }, [fill, label]);
+    }));
+    const lmax = Math.max(...Object.values(C.LENGTH_SHARE));
+    $('lengthBars').replaceChildren(...Object.entries(C.LENGTH_SHARE).map(([len, share]) => {
+      const fill = el('span', { className: 'length-fill' });
+      fill.style.width = `${(share / lmax) * 100}%`;
+      return el('li', { 'data-length': len }, [
+        el('span', { text: t('length.row', { n: len }) }), el('span', { className: 'length-track' }, [fill]),
+        el('span', { className: 'value', text: t('share.value', { n: share }) }),
+      ]);
+    }));
+  }
 
-    if (newTheme === 'light') {
-      body.setAttribute('data-theme', 'light');
-    } else {
-      body.removeAttribute('data-theme');
+  function renderShape(f) {
+    const p = state.pattern;
+    const has = p.length > 0;
+    $('kNodes').textContent = has ? String(f.nodes) : '—';
+    $('kLength').textContent = p.length > 1 ? f.length.toFixed(2) : '—';
+    $('kIntersections').textContent = has ? t('unit.times', { n: f.intersections }) : '—';
+    $('kOverlaps').textContent = has ? t('unit.lines', { n: f.overlaps }) : '—';
+    $('kKnight').textContent = has ? t('unit.times', { n: f.knightMoves }) : '—';
+    $('kStart').textContent = has ? t('start.value', { n: p[0], cls: t(`start.${f.start}`) }) : '—';
+    for (const cell of $('startMap').children) cell.classList.toggle('current', has && Number(cell.dataset.node) === p[0]);
+    for (const li of $('lengthBars').children) li.classList.toggle('current', Number(li.dataset.length) === p.length);
+    $('sequence').textContent = has ? t('seq.value', { seq: p.join(' → '), n: p.length }) : t('seq.none');
+  }
+
+  // ---- 攻撃ごとのカード ----
+  const para = (text, className = '') => el('p', className ? { className, text } : { text });
+  const card = (key, paras) => el('article', { className: 'attack-card' }, [el('h3', { text: t(`card.${key}.title`) }), ...paras]);
+
+  function renderAttacks(f) {
+    const p = state.pattern;
+    const status = $('attackStatus');
+    const cards = $('attackCards');
+    const ref = $('reference');
+    if (C.validate(p)) {
+      status.textContent = t(p.length ? 'status.short' : 'status.empty');
+      cards.replaceChildren();
+      ref.replaceChildren();
+      return;
     }
+    if (!state.statsReady) {
+      status.textContent = t('status.computing');
+      return;
+    }
+    status.textContent = '';
+    const F = C.FACTS;
+    const startShare = C.START_SHARE[p[0]];
+    const lengths = Object.values(C.LENGTH_SHARE);
+    const lenShare = C.LENGTH_SHARE[p.length];
+    const worst = C.shortestFirstWorst(p.length);
+    const smudge = C.smudgeCandidates(p);
+    const ps = C.sunScore(f);
+    const cls = t(`sun.${C.sunClass(ps)}`);
+    const total = num(C.stats().total);
+    cards.replaceChildren(
+      card('guess', [
+        para(t('card.guess.start', { node: p[0], share: startShare, rank: rankOf(C.START_SHARE, startShare) }), 'value'),
+        para(t('card.guess.length', { n: p.length, share: lenShare, rank: rankOf(lengths, lenShare) }), 'value'),
+        para(t('card.guess.rate', { day: C.attemptsWithin(86400), week: C.attemptsWithin(7 * 86400) })),
+        para(t('card.guess.paper', { guesses: F.aviv2015.guesses, share: F.aviv2015.share3 }), 'paper'),
+      ]),
+      card('brute', [
+        para(t('card.brute.count', { n: p.length, count: num(C.stats().byLength[p.length]), worst: num(worst) }), 'value'),
+        para(t('card.brute.time', { worst: num(worst), time: duration(C.waitBeforeAttempt(worst)) })),
+        para(t('card.brute.legacy', { total }), 'paper'),
+      ]),
+      card('shoulder', [
+        para(t('card.shoulder.length', { n: p.length }), 'value'),
+        para(t('card.shoulder.paper', { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines, pin: F.aviv2017.pin6 }), 'paper'),
+        para(t('card.shoulder.tip')),
+      ]),
+      card('smudge', [
+        para(t('card.smudge.points', { points: num(smudge.points) }), 'value'),
+        para(t('card.smudge.lines', { lines: num(smudge.lines) }), 'value'),
+        para(t('card.smudge.paper', { partial: F.aviv2010.partial, full: F.aviv2010.full }), 'paper'),
+      ]),
+      card('thermal', [
+        f.overlaps
+          ? para(t('card.thermal.some', { o: f.overlaps, seconds: F.abdelrahman2017.seconds, rate: F.abdelrahman2017.withOverlap }), 'value')
+          : para(t('card.thermal.none', { seconds: F.abdelrahman2017.seconds, rate: F.abdelrahman2017.noOverlap }), 'value'),
+      ]),
+      card('video', [
+        para(t('card.video.score', { ps: ps.toFixed(2), cls }), 'value'),
+        para(t('card.video.paper', { attempts: F.ye2017.attempts, within: F.ye2017.within, complex: F.ye2017.complexFirst, simple: F.ye2017.simpleFirst }),
+          'paper'),
+      ]),
+    );
+    ref.replaceChildren(
+      el('h3', { text: t('ref.title') }),
+      para(t('ref.line', { ps: ps.toFixed(2), total, pct: pct(C.sunPercentile(ps)) })),
+      para(t('ref.caveat'), 'note'),
+    );
+  }
 
-    // Save theme preference
-    localStorage.setItem('theme', newTheme);
+  function render() {
+    const f = C.features(state.pattern);
+    drawPad();
+    renderShape(f);
+    renderAttacks(f);
+  }
 
-    // Redraw canvases with new theme
-    redraw(); // Main canvas
-    evaluate();
-    drawExamplePatterns();
+  // 全パターンの数え上げは重いので、最初の描画のあとに1回だけ行う
+  function ensureStats() {
+    if (state.statsReady) return;
+    setTimeout(() => {
+      C.stats();
+      state.statsReady = true;
+      render();
+      renderSaved();
+      if (examplesBuilt) renderExamples();
+      if (learnBuilt || tabs.current() === 'learn') renderLearn();
+    }, 30);
+  }
+
+  // ---- 文字での入力 ----
+  function bindInput() {
+    const input = $('patternInput');
+    const apply = () => {
+      const r = C.parse(input.value);
+      const err = $('patternError');
+      if (r.error === 'empty') {
+        err.textContent = '';
+        state.pattern = [];
+        state.steps = [];
+      } else if (r.error === 'char') {
+        err.textContent = t('err.char');
+        return render();
+      } else if (r.error === 'repeat') {
+        err.textContent = t('err.repeat', { n: r.repeated });
+        return render();
+      } else {
+        err.textContent = r.error === 'short' ? t('err.short', { n: r.pattern.length }) : '';
+        state.pattern = r.pattern;
+        state.steps = r.pattern.map(() => 1);
+      }
+      render();
+    };
+    input.addEventListener('input', (e) => {
+      if (!e.isComposing) apply();
+    });
+    input.addEventListener('compositionend', apply);
+    $('btnUndo').addEventListener('click', () => {
+      if (!state.steps.length) return;
+      state.pattern.splice(-state.steps.pop());
+      changed(true);
+    });
+    $('btnClear').addEventListener('click', () => {
+      state.pattern = [];
+      state.steps = [];
+      changed(true);
+    });
+    $('showNumbers').addEventListener('change', (e) => pad.classList.toggle('show-numbers', e.target.checked));
+  }
+
+  // ---- パターン例 ----
+  let examplesBuilt = false;
+
+  function drawMini(cv, pattern) {
+    const w = 96;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = w * dpr;
+    cv.height = w * dpr;
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, w);
+    const at = (i) => nodeCenter(i, w);
+    ctx.strokeStyle = cssVar('--pad-line');
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(...at(pattern[0]));
+    for (let i = 1; i < pattern.length; i++) ctx.lineTo(...at(pattern[i]));
+    ctx.stroke();
+    for (let i = 0; i < C.NODES; i++) {
+      const [x, y] = at(i);
+      ctx.beginPath();
+      ctx.arc(x, y, i === pattern[0] ? 7 : 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = pattern.includes(i) ? cssVar('--pad-line') : cssVar('--pad-ring');
+      ctx.fill();
+    }
+  }
+
+  function exampleVars(ex, f, smudge) {
+    return {
+      start: C.START_SHARE[ex.pattern[0]], len: C.LENGTH_SHARE[ex.pattern.length], n: ex.pattern.length, points: num(smudge.points),
+      lines: num(smudge.lines), count: num(C.stats().byLength[4]), share: C.START_SHARE[ex.pattern[0]], max: C.sunScore(f).toFixed(3),
+    };
+  }
+
+  function renderExamples() {
+    examplesBuilt = true;
+    const grid = $('exampleGrid');
+    grid.replaceChildren(...C.EXAMPLES.map((ex) => {
+      const f = C.features(ex.pattern);
+      const cv = el('canvas', { 'aria-hidden': 'true' });
+      drawMini(cv, ex.pattern);
+      const title = t(`ex.${ex.id}.title`);
+      const button = el('button', { type: 'button', className: 'secondary', text: t('ex.check'), 'aria-label': t('ex.checkLabel', { title }) });
+      button.addEventListener('click', () => {
+        setPattern(ex.pattern);
+        tabs.select('check');
+        $('drawHeading').scrollIntoView({ block: 'start' });
+        $('patternInput').focus({ preventScroll: true });
+      });
+      const body = [el('h3', { text: title }), el('p', { className: 'mono', text: C.format(ex.pattern) })];
+      if (state.statsReady) {
+        const smudge = C.smudgeCandidates(ex.pattern);
+        const ps = C.sunScore(f);
+        body.push(el('p', { text: t(`ex.${ex.id}.lesson`, exampleVars(ex, f, smudge)) }));
+        body.push(el('p', { className: 'values', text: t('ex.values', {
+          n: f.nodes, share: C.START_SHARE[ex.pattern[0]], lines: num(smudge.lines), o: f.overlaps, ps: ps.toFixed(2), cls: t(`sun.${C.sunClass(ps)}`),
+        }) }));
+      } else {
+        body.push(el('p', { className: 'note', text: t('status.computing') }));
+      }
+      body.push(button);
+      return el('article', { className: 'example-card' }, [cv, el('div', {}, body)]);
+    }));
+  }
+
+  // ---- 座学 ----
+  // Gatekeeper の待ち時間を、同じ待ちが続く回数ごとにまとめる（140回目以降は毎回24時間）
+  function gatekeeperRows() {
+    const rows = [];
+    for (let c = 1; c < 140; c++) {
+      const ms = C.gatekeeperTimeoutMs(c);
+      const last = rows[rows.length - 1];
+      if (last && last.ms === ms) last.to = c;
+      else rows.push({ from: c, to: c, ms });
+    }
+    rows.push({ from: 140, to: null, ms: C.gatekeeperTimeoutMs(140) });
+    return rows;
+  }
+
+  function table(headers, rows) {
+    const head = el('tr', {}, headers.map((h) => el('th', { scope: 'col', text: h })));
+    const cell = (c, i) => (i === 0 ? el('th', { scope: 'row', text: c }) : el('td', { 'data-label': headers[i], text: c }));
+    const body = rows.map((cells) => el('tr', {}, cells.map(cell)));
+    return el('div', { className: 'table-wrap' }, [el('table', { className: 'data-table' }, [el('thead', {}, [head]), el('tbody', {}, body)])]);
+  }
+
+  function section(titleKey, children, open = false) {
+    const d = el('details', { className: 'learn-section' }, [el('summary', {}, [el('h3', { text: t(titleKey) })]), ...children]);
+    d.open = open;
+    return d;
+  }
+
+  const list = (keys, vars = {}) => el('ul', { className: 'learn-list' }, keys.map((k) => el('li', { text: t(k, vars[k] || {}) })));
+
+  function renderLearn() {
+    if (!state.statsReady) {
+      $('learnBody').replaceChildren(el('p', { className: 'note', text: t('status.computing') }));
+      return;
+    }
+    const F = C.FACTS;
+    const s = C.stats();
+    const total = num(s.total);
+    const lengths = Object.keys(s.byLength).map(Number);
+    const uniqueShare = pct([...s.byLines.values()].filter((c) => c === 1).reduce((a, c) => a + c, 0) / s.total);
+    const gk = gatekeeperRows().map((r) => [
+      r.to === null ? t('learn.andAfter', { n: r.from }) : r.from === r.to ? t('learn.single', { n: r.from }) : t('learn.range', { from: r.from, to: r.to }),
+      r.ms ? duration(r.ms / 1000) : t('learn.noWait'),
+    ]);
+    const sources = el('ol', { className: 'sources' }, Object.keys(C.SOURCES).map((k) => el('li', {}, [
+      el('a', { href: C.SOURCE_URLS[k], target: '_blank', rel: 'noopener noreferrer', text: C.SOURCES[k] }),
+    ])));
+    $('learnBody').replaceChildren(
+      section('learn.basics.title', [
+        para(t('learn.basics.p1')), para(t('learn.basics.p2')), para(t('learn.basics.p3', { total })),
+        table([t('learn.colLength'), t('learn.colCount'), t('learn.colWorst')],
+          lengths.map((l) => [t('length.row', { n: l }), num(s.byLength[l]), num(C.shortestFirstWorst(l))])),
+      ], true),
+      section('learn.device.title', [
+        para(t('learn.device.p1', { day: C.attemptsWithin(86400), week: C.attemptsWithin(7 * 86400), month: C.attemptsWithin(30 * 86400) })),
+        table([t('learn.colFailures'), t('learn.colWait')], gk),
+        para(t('learn.device.p2')), para(t('learn.device.p3', { total })),
+      ]),
+      section('learn.people.title', [
+        para(t('learn.people.loge', { ...F.loge, patterns: num(F.loge.patterns) })),
+        para(t('learn.people.uellenbeck', { ...F.uellenbeck, g10: F.uellenbeck.guesses10, g30: F.uellenbeck.guesses30 })),
+        para(t('learn.people.aviv', F.aviv2015)),
+      ]),
+      section('learn.attacks.title', [
+        para(t('learn.attacks.smudge', { ...F.aviv2010, unique: uniqueShare })),
+        para(t('learn.attacks.shoulder', { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines, pin: F.aviv2017.pin6 })),
+        para(t('learn.attacks.video', { within: F.ye2017.within, complex: F.ye2017.complexFirst, simple: F.ye2017.simpleFirst })),
+        para(t('learn.attacks.thermal', F.abdelrahman2017)),
+      ]),
+      section('learn.users.title', [list(['learn.users.l1', 'learn.users.l2', 'learn.users.l3', 'learn.users.l4', 'learn.users.l5', 'learn.users.l6',
+        'learn.users.l7'], {
+        'learn.users.l3': { withLines: F.aviv2017.withLines, withoutLines: F.aviv2017.withoutLines }, 'learn.users.l4': { pin: F.aviv2017.pin6 },
+      })]),
+      section('learn.devs.title', [list(['learn.devs.l1', 'learn.devs.l2', 'learn.devs.l3', 'learn.devs.l4', 'learn.devs.l5'], {
+        'learn.devs.l3': { total }, 'learn.devs.l4': F.song2015,
+      })]),
+      section('learn.sources.title', [sources]),
+    );
+    learnBuilt = true;
+  }
+  let learnBuilt = false;
+
+  // ---- 保存（localStorage。名前と点の並びだけ） ----
+  const SAVE_KEY = 'patternlock-security-trainer-saved';
+  const OLD_KEY = 'plst_saved';
+  const MAX_NAME = 50;
+
+  // 保存した値は信用しない: 名前は文字列で50字まで、点の並びは有効なパターンだけ
+  function clean(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((x) => x && typeof x === 'object' && Array.isArray(x.seq) && C.validate(x.seq) === null)
+      .map((x) => ({ name: String(x.name == null ? '' : x.name).slice(0, MAX_NAME), seq: x.seq.slice() }));
+  }
+
+  function loadSaved() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) return clean(JSON.parse(raw));
+      // 旧版（plst_saved）の保存を1回だけ引き継ぐ
+      const old = localStorage.getItem(OLD_KEY);
+      if (old) {
+        const list = clean(JSON.parse(old));
+        localStorage.setItem(SAVE_KEY, JSON.stringify(list));
+        localStorage.removeItem(OLD_KEY);
+        return list;
+      }
+    } catch (e) {
+      return [];
+    }
+    return [];
+  }
+
+  function storeSaved(list) {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function renderSaved() {
+    const list = loadSaved();
+    const body = $('savedTable').querySelector('tbody');
+    $('savedEmpty').hidden = list.length > 0;
+    $('savedTable').hidden = list.length === 0;
+    $('btnClearSaved').hidden = list.length === 0;
+    body.replaceChildren(...list.map((item, idx) => {
+      const f = C.features(item.seq);
+      const ps = C.sunScore(f);
+      const load = el('button', { type: 'button', className: 'secondary', text: t('save.load'), 'aria-label': t('save.loadLabel', { name: item.name }) });
+      load.addEventListener('click', () => {
+        setPattern(item.seq);
+        $('saveStatus').textContent = t('save.loaded', { name: item.name });
+        $('drawHeading').scrollIntoView({ block: 'start' });
+      });
+      const del = el('button', { type: 'button', className: 'secondary', text: t('save.delete'), 'aria-label': t('save.deleteLabel', { name: item.name }) });
+      del.addEventListener('click', () => {
+        const now = loadSaved();
+        now.splice(idx, 1);
+        storeSaved(now);
+        $('saveStatus').textContent = t('save.deleted', { name: item.name });
+        renderSaved();
+      });
+      const lines = state.statsReady ? num(C.smudgeCandidates(item.seq).lines) : '…';
+      return el('tr', {}, [
+        el('th', { scope: 'row', text: item.name }),
+        el('td', { 'data-label': t('ui.colPattern'), className: 'mono', text: C.format(item.seq) }),
+        el('td', { 'data-label': t('ui.colNodes'), text: String(f.nodes) }),
+        el('td', { 'data-label': t('ui.colLines'), text: lines }),
+        el('td', { 'data-label': t('ui.colSun'), text: t('sun.value', { ps: ps.toFixed(2), cls: t(`sun.${C.sunClass(ps)}`) }) }),
+        el('td', { 'data-label': t('ui.colActions') }, [el('span', { className: 'actions' }, [load, del])]),
+      ]);
+    }));
+  }
+
+  function bindSave() {
+    $('btnSave').addEventListener('click', () => {
+      const status = $('saveStatus');
+      if (C.validate(state.pattern)) {
+        status.textContent = t('save.short');
+        return;
+      }
+      const list = loadSaved();
+      let name = $('saveName').value.trim().slice(0, MAX_NAME);
+      if (!name) {
+        const used = list.map((x) => {
+          const m = /(\d+)$/.exec(x.name);
+          return m ? Number(m[1]) : 0;
+        });
+        name = t('save.defaultName', { n: Math.max(0, ...used) + 1 });
+      }
+      list.push({ name, seq: state.pattern.slice() });
+      if (!storeSaved(list)) {
+        status.textContent = t('save.failed');
+        return;
+      }
+      $('saveName').value = '';
+      status.textContent = t('save.saved', { name });
+      renderSaved();
+    });
+    const dialog = $('confirmDialog');
+    $('btnClearSaved').addEventListener('click', () => {
+      dialog.showModal();
+      $('confirmNo').focus();
+    });
+    $('confirmNo').addEventListener('click', () => dialog.close());
+    $('confirmYes').addEventListener('click', () => {
+      storeSaved([]);
+      dialog.close();
+      $('saveStatus').textContent = t('save.cleared');
+      renderSaved();
+    });
+    dialog.addEventListener('close', () => ($('btnClearSaved').hidden ? $('saveName') : $('btnClearSaved')).focus());
+  }
+
+  // ---- ヘルプ（dialog）。? ボタンの話題だけを見せ、閉じたら押したボタンへフォーカスを戻す ----
+  function initHelp() {
+    const dialog = $('helpDialog');
+    let opener = null;
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.help-icon');
+      if (!btn) return;
+      for (const topic of dialog.querySelectorAll('.help-topic')) topic.hidden = topic.dataset.helpTopic !== btn.dataset.help;
+      $('helpTitle').textContent = btn.getAttribute('aria-label');
+      opener = btn;
+      dialog.showModal();
+      $('helpClose').focus();
+    });
+    $('helpClose').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => {
+      if (opener) opener.focus();
+    });
+  }
+
+  // ---- タブ ----
+  let tabs = null;
+  function initTabs() {
+    const TT = globalThis.PatternTabs;
+    tabs = TT.init(document.querySelector('.tabs'), (name) => {
+      if (name === 'examples') renderExamples();
+      if (name === 'learn') renderLearn();
+    });
+    const first = TT.fromUrl(location.search, location.hash);
+    if (first) tabs.select(first);
+  }
+
+  buildPad();
+  bindPad();
+  buildBias();
+  bindInput();
+  bindSave();
+  initHelp();
+  initTabs();
+  globalThis.PatternTheme.init($('btnTheme'), t, () => {
+    drawPad();
+    if (examplesBuilt) renderExamples();
   });
-}
-
-// Initialize theme first, then init UI
-initThemeToggle();
-init();
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => drawPad()).observe(pad);
+  render();
+  renderSaved();
+  ensureStats();
+  document.documentElement.setAttribute('data-ready', 'true');
+})();
