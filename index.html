@@ -50,7 +50,7 @@
       <div class="check-grid">
         <section class="card" aria-labelledby="drawHeading">
           <h2 id="drawHeading" data-i18n="ui.drawHeading">パターンを描く</h2>
-          <p class="note" data-i18n="ui.drawHint">点から指（マウス）を離さずになぞります。キーボードでは Tab で点を選び、Enter で順に足します。飛び越えた点は、Android と同じく自動で入ります。</p>
+          <p class="note" data-i18n="ui.drawHint">点から指（マウス）を離さずになぞります。キーボードではTabで点を選び、Enterで順に足します。飛び越えた点は、Androidと同じく自動で入ります。</p>
           <div class="pad" id="pad">
             <canvas id="padCanvas" aria-hidden="true"></canvas>
           </div>
@@ -60,7 +60,7 @@
             <label class="check"><input type="checkbox" id="showNumbers" /><span data-i18n="ui.showNumbers">点の番号を表示</span></label>
           </div>
           <div class="label-row">
-            <label for="patternInput" data-i18n="ui.patternInputLabel">文字で入れる（点の番号0〜8。例 0-4-8-5）</label>
+            <label for="patternInput" data-i18n="ui.patternInputLabel">文字で入れる（点の番号0〜8。例0-4-8-5）</label>
           </div>
           <input id="patternInput" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="patternError" />
           <p id="patternError" class="field-error" aria-live="polite"></p>
@@ -133,7 +133,7 @@
     <div class="tab-panel" id="panel-examples" role="tabpanel" aria-labelledby="tab-examples" hidden>
       <section class="card" aria-labelledby="examplesHeading">
         <h2 id="examplesHeading" data-i18n="ui.examplesHeading">パターン例</h2>
-        <p class="note" data-i18n="ui.examplesNote">どれも Android で設定できる有効なパターンです。値はすべて画面の中で計算しています。「調べる」で、そのパターンを「調べる」タブに入れます。</p>
+        <p class="note" data-i18n="ui.examplesNote">どれもAndroidで設定できる有効なパターンです。値はすべて画面の中で計算しています。「調べる」で、そのパターンを「調べる」タブに入れます。</p>
         <div class="example-grid" id="exampleGrid"></div>
       </section>
     </div>
@@ -151,7 +151,7 @@
         <button type="button" id="helpClose" class="secondary" data-i18n="ui.close">閉じる</button>
       </div>
       <section class="help-topic" data-help-topic="shape" hidden>
-        <p data-i18n="ui.helpShape1">交差: 隣り合わない2本の線が交わるか、点で触れる回数です。重なり: 前に引いた線（点と点の間の1区間）をもう一度通る回数です。数え方は Golla ら（2019）の定義に合わせています。</p>
+        <p data-i18n="ui.helpShape1">交差: 隣り合わない2本の線が交わるか、点で触れる回数です。重なり: 前に引いた線（点と点の間の1区間）をもう一度通る回数です。数え方はGollaら（2019）の定義に合わせています。</p>
         <p data-i18n="ui.helpShape2">桂馬飛び: 横2・縦1、または横1・縦2だけ離れた点へ直接引く線です。間に点がないので、何も自動で入りません。</p>
         <p data-i18n="ui.helpShape3">始点は角（0・2・6・8）、辺（1・3・5・7）、中央（4）に分けます。</p>
       </section>

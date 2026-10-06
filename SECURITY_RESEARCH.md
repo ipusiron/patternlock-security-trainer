@@ -1,342 +1,128 @@
-# パターンロック セキュリティ研究 - 専門家向け解説
+# パターンロックの研究と実装 - 専門家向けの背景資料
 
-> **注意**: この文書はセキュリティ専門家、研究者、開発者向けの技術的解説です。防御的セキュリティの理解を目的としており、攻撃手法の説明は学術的・教育的目的に限定されます。
+このツール（PatternLock Security Trainer）が使っている数字の出典と、その条件をまとめた資料です。論文は本文で、Androidの実装はAOSPのソースコードで確かめた値だけを載せています。確かめられなかったものは、その旨を書いています。
 
-## 📋 概要
-
-AndroidやiOSで広く採用されているパターンロックは、利便性と基本的なセキュリティを提供する認証方式として普及していますが、近年の研究により多数の脆弱性が明らかになっています。本文書では、2010年代から2024年現在までの主要な研究成果、攻撃手法、対策技術を体系的に解説します。
+点の番号は0〜8（左上が0、左から右・上から下）で書きます。論文によっては1〜9で数えているので、引用するときは注意してください。
 
 ---
 
-## 🔍 主要な攻撃ベクトル
+## 1. Androidの実装
 
-### 1. 🖐️ スマッジ攻撃 (Smudge Attacks)
+### 1.1 パターンの規則
 
-#### 概要
-タッチスクリーン上に残る指紋の脂質痕跡を視覚的に解析してパターンを推測する攻撃手法。
+- 3×3の9点を一筆でなぞる。最小は4点（`LockPatternUtils`の`MIN_LOCK_PATTERN_SIZE = 4`）。4点未満の誤りは失敗に数えない
+- まだ使っていない点を飛び越えると、その点が自動で入る（`LockPatternView`の`detectAndAddHit`）。縦横に2つ、または斜めに2つ離れた点への線が対象で、桂馬飛び（横2・縦1など）には何も入らない。使った点の上は通れる
+- この規則で作れるパターンは389,112通り（長さ4〜9で1,624・7,152・26,016・72,912・140,704・140,704）。このツールの数え上げと、Løge（2015）の表2.1が一致する
 
-#### 研究の発展
-- **2010年**: Aviv et al. による基礎研究 - 単純な視覚観察によるスマッジ攻撃
-- **2013年**: TinyLockによる防御機構の提案
-- **2021-2024年**: CNN（畳み込みニューラルネットワーク）を活用したスマートスマッジ攻撃
+### 1.2 古いAndroidの保存方法（4.4〜5.1）
 
-#### 技術的詳細
-```python
-# CNNベースのスマッジ攻撃の概念的フロー
-1. スクリーン画像取得 → 前処理（ノイズ除去、コントラスト調整）
-2. CNN特徴抽出 → パターン候補生成
-3. 確率的マッチング → 最適パターン選択
+- `LockPatternUtils.patternToHash`は、各点を`row*3+column`の1バイト（0〜8、文字ではない）にして、塩なしのSHA-1を取る。コードのコメントは「Not the most secure」と書いている
+- 結果は`/data/system/gesture.key`に保存された。ファイルを読めれば、全389,112通りのSHA-1の表を引くだけでパターンが戻る。鑑識の道具（Andriller、sch3m4のスクリプトなど）もこの方法を使う
+- android-6.0.0_r1から、パターンはGatekeeperに登録する形に変わった。古いgesture.keyは1回SHA-1で照合してから移される
 
-成功率: 従来60-70% → CNN手法で85-95%
-```
+### 1.3 失敗したときの待ち時間
 
-#### 対策技術
-- **Decoy Points**: ダミーの接触点を追加
-- **SmudgeSafe**: 幾何学的画像変換による痕跡の無効化
-- **Multi-Touch**: 複数指による同時入力
+android-7.0.0_r1以降の`system/gatekeeper/gatekeeper.cpp`（`ComputeRetryTimeout`、mainと同じ）は、失敗の通算回数に応じて次の待ち時間を返します。
 
-### 2. 🎥 観察攻撃 (Shoulder Surfing & Video-based Attacks)
+| 失敗の回数 | 次を試すまでの待ち |
+|---|---|
+| 1〜4回目・6〜9回目 | 待ちなし |
+| 5回目・10回目 | 30秒 |
+| 11〜29回目 | 毎回30秒 |
+| 30〜139回目 | 30秒を10回ごとに倍（130〜139回目は約8.5時間） |
+| 140回目以降 | 毎回24時間 |
 
-#### 発展段階
-1. **物理的肩越し観察**: 直接的な視覚観察
-2. **録画解析**: スマートフォンカメラによる遠隔録画
-3. **コンピュータビジョン自動化**: AIによる自動パターン抽出
+- この表のとおりなら、端末で試せるのは1日に111回、1週間に139回、30日で162回になる
+- android-6.0.0_r1では、11回目以降も30秒のまま（倍にならない）。android-5.1.1以前のロック画面は、5回失敗するごとに30秒待たせた（`FAILED_ATTEMPTS_BEFORE_TIMEOUT = 5`、`FAILED_ATTEMPT_TIMEOUT_MS = 30000L`）
+- 実機では、Gatekeeperはメーカーの信頼できる実行環境（TEE）の中で動く。公式の説明は待ち時間の値を定めておらず、メーカーが変えられる
 
-#### 最新研究 (2024年)
-- **深層学習による動画解析**: 手の動きから3次元軌跡を再構成
-- **時系列解析**: フレーム間の指の移動パターンから入力順序を特定
-- **確率的推論**: 部分的な観察データから全体パターンを推測
+### 1.4 いまのAndroidの保存方法
 
-```
-攻撃成功率の推移:
-- 人間の直接観察: 40-60%
-- 録画 + 手動解析: 70-85%
-- AI自動解析: 90-95%
-```
-
-### 3. 🌡️ サーマル攻撃 (Thermal Attacks)
-
-#### 技術原理
-赤外線カメラを使用して、タッチ操作直後に残る体温痕跡を検出・解析。
-
-#### 攻撃の特徴
-- **時間的制約**: 入力後30秒以内が最も効果的
-- **環境依存**: 室温、湿度、デバイス材質に大きく影響
-- **順序推定**: 温度勾配から入力順序を部分的に推測可能
-
-#### 対策
-- **時間差攻撃**: 複数のダミー操作による熱痕跡の混乱
-- **材質改良**: 熱伝導性の調整された画面保護フィルム
-
-### 4. 🔊 音響サイドチャネル攻撃 (Acoustic Side-Channel)
-
-#### 攻撃メカニズム
-- **タッチサウンド解析**: 異なる画面位置でのタッチ音の周波数特性差
-- **振動パターン**: デバイス全体の振動伝播パターンの解析
-- **機械学習分類**: 音響特徴量からの位置特定
-
-#### 成功要因
-```
-音響特徴の差異:
-- 画面端部: 高周波成分多
-- 画面中央: 低周波成分卓越
-- 振動減衰: 位置依存の減衰パターン
-```
-
-### 5. 📱 センサーベース攻撃 (Sensor-based Attacks)
-
-#### 利用センサー
-- **加速度計**: デバイスの微細な動き
-- **ジャイロスコープ**: 回転運動の検出
-- **磁力計**: 磁場変動の測定
-- **近接センサー**: 指の接近パターン
-
-#### 機械学習アプローチ
-```python
-# センサーデータの特徴量抽出
-features = {
-    'acceleration_variance': np.var(acc_data),
-    'gyro_peak_frequency': fft_analysis(gyro_data),
-    'magnetometer_deviation': np.std(mag_data),
-    'temporal_intervals': calculate_intervals(timestamps)
-}
-
-# 深層学習による分類
-model = LSTM(input_dim=feature_count, hidden_layers=[128, 64, 32])
-predicted_pattern = model.predict(features)
-```
-
-#### 攻撃精度
-- **単一センサー**: 40-60%
-- **センサー融合**: 70-85%
-- **時系列深層学習**: 85-95%
+- 公式の説明（File-based encryption）によると、画面ロックのPIN・パターン・パスワードはscryptで引き伸ばされ（約25ミリ秒・約2MiBを目安）、セキュアチップかTEEにある秘密（WeaverかGatekeeperとKeystoreの鍵）と結びつけられて、データを暗号化する合成パスワードを守る
+- 同じ説明は、scryptだけではあまり安全にならず、守りの本体はハードウェアが強制する回数の制限だとしている
 
 ---
 
-## 🛡️ 防御技術の発展
+## 2. 人の選び方
 
-### 1. アルゴリズム的対策
+| 出典 | 調べたもの | 左上から | 角から | 中央から | 長さ |
+|---|---|---|---|---|---|
+| Løge 2015 | 802人・3,393個 | 44% | 77%（表5.6の和） | 4% | スマートフォン用の平均5.40点 |
+| Uellenbeckら、2013 | 実際のパターン（105人） | 38% | 75% | 6% | 平均5.63点 |
+| Uellenbeckら、2013 | ゲーム形式の調査 | 43〜44% | 78% | 2% | 守りの平均6.59点 |
 
-#### パターン複雑化
-```python
-# セキュリティ強化アルゴリズム例
-def enhance_pattern_security(pattern):
-    security_score = 0
-
-    # 長さベースの評価
-    if len(pattern) >= 8:
-        security_score += 40
-    elif len(pattern) >= 6:
-        security_score += 25
-    else:
-        security_score += 10
-
-    # 交差数の評価
-    intersections = calculate_intersections(pattern)
-    security_score += min(intersections * 8, 15)
-
-    # 開始点バイアスペナルティ
-    if pattern[0] == 0:  # 左上角
-        security_score -= 10
-    elif pattern[0] in [1, 2, 3, 5, 6, 7, 8]:  # その他の角・辺
-        security_score -= 5
-
-    return min(security_score, 100)
-```
-
-#### 動的セキュリティ調整
-- **適応的認証**: 使用パターンに基づく動的セキュリティレベル調整
-- **コンテキスト認証**: 位置、時間、デバイス状態に基づく追加認証
-
-### 2. ハードウェア対策
-
-#### 専用セキュリティチップ
-- **Secure Enclave** (iOS): パターン処理の隔離実行
-- **TEE (Trusted Execution Environment)**: Android用セキュアゾーン
-- **専用暗号プロセッサ**: パターンハッシュの高速処理
-
-#### センサー統合
-- **生体認証併用**: 指紋・顔認証との組み合わせ
-- **多要素認証**: PIN + パターン + 生体認証
-
-### 3. プロトコルレベル防御
-
-#### チャレンジ・レスポンス
-```python
-# 動的チャレンジによるリプレイ攻撃防止
-def generate_pattern_challenge():
-    challenge = {
-        'grid_rotation': random.choice([0, 90, 180, 270]),
-        'node_randomization': shuffle_node_positions(),
-        'decoy_points': generate_decoy_points(count=3),
-        'timeout': random.randint(10, 30)
-    }
-    return challenge
-```
-
-#### レート制限とロックアウト
-- **指数バックオフ**: 失敗回数に応じた待機時間の増加
-- **一時的ロック**: N回失敗後の一定期間アクセス禁止
-- **永続的ワイプ**: 重大な攻撃検出時のデータ消去
+- Løge（2015）の長さの割合（図5.5(b)の値）は、4点36%・5点23%・6点12%・7点12%・8点4%・9点12%。上位100個のパターンで全体の42%を占めた
+- Løge（2015）の始点の割合（表5.6）は、左上44%・上9%・右上15%・左6%・中央4%・右2%・左下14%・下2%・右下4%
+- Uellenbeckら（2013）の部分推測エントロピーは、守りのパターンで8.72・9.10・10.90ビット（10%・20%・50%を当てるまで）。一様に選んだ場合は18.57ビット。10回の推測で約4%、30回で約9%が当たった（攻めの場面で作ったパターンは約7%・約19%）
+- Avivら（2015）は、20回の推測で3×3の15%、4×4の19%が当たったとしている。4×4の有効なパターンは4,350,069,823,024通りあるが、人が選ぶパターンの推測されやすさは大きくは変わらなかった
 
 ---
 
-## 📊 脆弱性評価フレームワーク
+## 3. パターンそのものを盗み見る攻撃
 
-### CVSS v3.1による評価例
+| 攻撃 | 値 | 条件 | 出典 |
+|---|---|---|---|
+| 汚れ | 一部がわかった92%、全部がわかった68% | 画面の汚れを撮影。条件によって最悪37%・14% | Avivら、2010 |
+| 覗き見 | 線を表示する6点のパターン64.2%、線を表示しない設定35.3%、6桁のPIN10.8% | 1回見ただけ。複数回では79.9%・52.1%・26.5% | Avivら、2017 |
+| 動画 | 5回以内に95%超。1回目に「複雑」97.5%・「単純」60% | 120個のパターン、2m先からの撮影 | Yeら、2017 |
+| 熱 | 重なりのないパターン100%、重なりのあるパターン16.67% | 入力後30秒以内、18人 | Abdelrahmanら、2017 |
 
-```yaml
-# 典型的なパターンロック脆弱性のCVSS評価
-Base_Score: 6.8 (Medium)
-Attack_Vector: Physical (P)
-Attack_Complexity: Low (L)
-Privileges_Required: None (N)
-User_Interaction: None (N)
-Scope: Unchanged (U)
-Confidentiality: High (H)
-Integrity: High (H)
-Availability: None (N)
-
-# 時間的評価
-Exploit_Code_Maturity: Functional (F)
-Remediation_Level: Official Fix (O)
-Report_Confidence: Confirmed (C)
-Temporal_Score: 6.2
-```
-
-### 独自評価メトリクス
-
-#### PLSAF (Pattern Lock Security Assessment Framework)
-```python
-def calculate_plsaf_score(pattern, context):
-    base_score = calculate_pattern_strength(pattern)
-
-    # 脅威モデル調整
-    threat_multiplier = {
-        'casual_observer': 1.0,
-        'motivated_attacker': 0.7,
-        'state_actor': 0.3
-    }[context.threat_level]
-
-    # 環境要因
-    environmental_factors = {
-        'public_usage': 0.8,
-        'private_usage': 1.2,
-        'high_security_context': 0.5
-    }[context.usage_environment]
-
-    return base_score * threat_multiplier * environmental_factors
-```
+- 覗き見では、長さの影響が大きかった。交差・桂馬飛び・位置の影響ははっきりしなかった（Avivら、2017）
+- 動画の攻撃では、Sunらの複雑さが高いパターンのほうが、1回目に当たりやすかった（Yeら、2017）。見た目を複雑にすることが、攻撃によっては逆効果になる
+- 重なりは熱の跡を乱すので、熱の攻撃には強くなる。桂馬飛びは、点の熱の跡は乱さない（Abdelrahmanら、2017）
+- このツールの数え上げでは、引いた線（向きなし）が全部見えると、全パターンの50.2%が1通りに決まり、90.3%が2通り以内になる。使った点だけがわかる場合、候補の数の中央値は20,944通り
 
 ---
 
-## 🔬 最新研究動向 (2024年)
+## 4. 強度メーター
 
-### 1. 量子コンピューティング耐性
-- **Post-Quantum Pattern Locks**: 量子攻撃に対する耐性設計
-- **格子暗号適用**: パターンハッシュの量子セーフ化
-
-### 2. AI・機械学習の活用
-
-#### 攻撃側
-- **GAN (Generative Adversarial Networks)**: 人間らしいパターン生成
-- **強化学習**: 効率的攻撃戦略の自動学習
-- **連合学習**: プライバシー保護下での攻撃モデル学習
-
-#### 防御側
-- **異常検出**: 攻撃的なパターン入力の自動検出
-- **適応的認証**: ユーザー行動学習による個人化認証
-- **説明可能AI**: セキュリティ判断の透明性確保
-
-### 3. プライバシー保護技術
-
-#### ゼロ知識証明
-```python
-# パターンロック用ゼロ知識証明の概念
-def zkp_pattern_verification(pattern_hash, challenge):
-    """
-    パターンの知識を明かすことなく認証を行う
-    """
-    commitment = generate_commitment(pattern_hash, random_nonce)
-    proof = generate_proof(pattern_hash, challenge, random_nonce)
-    return verify_proof(commitment, challenge, proof)
-```
-
-#### 同形暗号
-- **暗号化された状態での計算**: パターン比較処理の秘匿化
-- **プライバシー保護認証**: サーバー側でのパターン知識不要
+- Sunら（2014）の強度は、PS＝点の数×log₂（線の長さ＋交差＋重なり）。全パターンでの範囲は6.340〜46.807（Løge 2015の式2.1の説明）。原典は読めなかったので、式はLøge（2015）とYeら（2017）、Gollaら（2019）の引用で確かめた
+- 交差・重なりの数え方は、Gollaら（2019）の定義（交差は点で触れるだけも数える、重なりは引き直した線分）を使った。この定義で全パターンを数えると、範囲6.340〜46.807が再現する
+- Songら（2015）のメーターを見せたグループでは、パターンの約10%が当たるまでの推測の回数が16回から48回に増えた（101個のパターン。要約で確認）
+- Gollaら（2019）は、見た目の性質（長さ・交差・重なりなど）にもとづく強度の推定は、実際の推測されやすさとの相関が低いと報告している
 
 ---
 
-## ⚠️ 倫理的考慮事項
+## 5. 守りの考え方
 
-### 研究倫理
-- **責任ある開示**: 脆弱性の適切な報告プロセス
-- **防御優先**: 攻撃研究は防御技術開発を目的とする
-- **社会的影響**: 研究成果の悪用防止策
+### 使う人
 
-### 法的制約
-- **コンピューター犯罪法**: 許可なき攻撃の禁止
-- **プライバシー法**: 個人データ保護の遵守
-- **研究倫理委員会**: 学術研究の適切な承認プロセス
+- 点を増やす（覗き見と総当たりの両方に関係する）
+- 左上・角から始めない（始点の偏りは推測の最初の候補になる）
+- 「パターンを表示する」をオフにする（覗き見の再現が64.2%から35.3%に下がった）
+- 覗き見が心配な場面では、6桁以上のPINも選択肢になる
+- 見た目を複雑にすれば安全とは限らない（動画の攻撃）
 
----
+### 作る人
 
-## 📚 主要参考文献
-
-### 基礎研究
-1. **Aviv, A.J. et al. (2010)**. "Smudge Attacks on Smartphone Touch Screens". *USENIX Security Symposium*.
-2. **Uellenbeck, S. et al. (2013)**. "Quantifying the Security of Graphical Passwords". *CCS '13*.
-3. **Andriotis, P. et al. (2013)**. "A Pilot Study on the Security of Pattern Screen-lock Methods". *WiSec '13*.
-
-### 最新研究 (2020-2024)
-4. **Zhang, L. et al. (2021)**. "A new smart smudge attack using CNN". *International Journal of Information Security*.
-5. **Kim, S. et al. (2024)**. "Pattern unlocking guided multi-modal continuous authentication for smartphone". *Computer Networks*.
-6. **Johnson, M. et al. (2024)**. "Strategies, Performance, and User Perception of Novice Smartphone-Unlock PIN-Guessers". *EuroUSEC '24*.
-
-### 防御技術
-7. **Smith, R. et al. (2023)**. "SmudgeSafe: Geometric image transformation for smudge-resistant authentication". *IEEE Transactions on Mobile Computing*.
-8. **Chen, W. et al. (2024)**. "Post-Quantum Security in Mobile Authentication Systems". *ACM Computing Surveys*.
+- 最小の長さを決め、失敗が続いたら待たせる（Gatekeeperの表）
+- パターンは塩つきの遅いハッシュにし、回数の制限はハードウェアで守る。塩なしのSHA-1は全パターンの表で戻る
+- 強度メーターを付けるなら、その限界も利用者に伝える
+- 線を表示しない設定を用意する
 
 ---
 
-## 🔗 関連リソース
+## 6. 確かめられなかったもの
 
-### オープンソースツール
-- **PatternLock Security Trainer**: 本プロジェクト
-- **OWASP Mobile Security Testing Guide**: モバイルセキュリティテストのベストプラクティス
-- **Android Security Research Tools**: Google提供の研究用ツールキット
-
-### 研究コミュニティ
-- **ACM SIGSAC**: セキュリティ・プライバシー研究コミュニティ
-- **USENIX Security**: セキュリティ技術の学術会議
-- **IEEE S&P**: セキュリティ・プライバシー分野の最高峰会議
-
-### 業界団体
-- **FIDO Alliance**: 認証技術の標準化団体
-- **GSMA Security**: モバイル業界のセキュリティ標準
-- **NIST Cybersecurity Framework**: 米国サイバーセキュリティフレームワーク
+- Sunら（2014）の原典（有料で読めなかった）。式と範囲は引用で確かめた
+- Andriotisら（WiSec 2013・HAS 2014）の原典（アクセスが止められていた）。このツールでは使っていない
+- メーカーごとのGatekeeperの待ち時間（AOSPの既定の実装だけを確かめた）
 
 ---
 
-## 💼 実用的推奨事項
+## 7. 参考文献
 
-### 開発者向け
-1. **多層防御**: パターンロック単体に依存しない設計
-2. **セキュリティ評価**: 定期的な脆弱性評価の実施
-3. **ユーザー教育**: セキュリティベストプラクティスの普及
+1. Marte Dybevik Løge, "Tell Me Who You Are and I Will Tell You Your Unlock Pattern", Master's thesis, NTNU, 2015. https://hdl.handle.net/11250/2380967
+2. Uellenbeck, Dürmuth, Wolf, Holz, "Quantifying the Security of Graphical Passwords: The Case of Android Unlock Patterns", ACM CCS 2013. https://doi.org/10.1145/2508859.2516700
+3. Aviv, Gibson, Mossop, Blaze, Smith, "Smudge Attacks on Smartphone Touch Screens", USENIX WOOT 2010. https://www.usenix.org/legacy/events/woot10/tech/full_papers/Aviv.pdf
+4. Aviv, Budzitowski, Kuber, "Is Bigger Better? Comparing User-Generated Passwords on 3x3 vs. 4x4 Grid Sizes for Android's Pattern Unlock", ACSAC 2015. https://doi.org/10.1145/2818000.2818014
+5. Aviv, Davin, Wolf, Kuber, "Towards Baselines for Shoulder Surfing on Mobile Authentication", ACSAC 2017. https://doi.org/10.1145/3134600.3134609
+6. Ye, Tang, Fang, Chen, Kim, Taylor, Wang, "Cracking Android Pattern Lock in Five Attempts", NDSS 2017. https://www.ndss-symposium.org/wp-content/uploads/2017/09/ndss2017_03A-5_Ye_paper.pdf
+7. Abdelrahman, Khamis, Schneegass, Alt, "Stay Cool! Understanding Thermal Attacks on Mobile-based User Authentication", CHI 2017. https://doi.org/10.1145/3025453.3025461
+8. Sun, Wang, Zheng, "Dissecting pattern unlock: The effect of pattern strength meter on pattern selection", Journal of Information Security and Applications, 2014. https://doi.org/10.1016/j.jisa.2014.10.009
+9. Golla, Rimkus, Aviv, Dürmuth, "On the In-Accuracy and Influence of Android Pattern Strength Meters", NDSS USEC 2019. https://www.ndss-symposium.org/wp-content/uploads/2019/02/usec2019_04-1_Golla_paper.pdf
+10. Song, Cho, Oh, Kim, Huh, "On the Effectiveness of Pattern Lock Strength Meters: Measuring the Strength of Real World Pattern Locks", CHI 2015. https://doi.org/10.1145/2702123.2702365
+11. Android Open Source Project, `system/gatekeeper/gatekeeper.cpp`. https://android.googlesource.com/platform/system/gatekeeper/+/refs/heads/main/gatekeeper.cpp
+12. Android Open Source Project, File-based encryption. https://source.android.com/docs/security/features/encryption/file-based
 
-### セキュリティ専門家向け
-1. **脅威モデリング**: 環境に応じたリスク評価
-2. **インシデント対応**: パターンロック突破の検出・対処
-3. **継続的監視**: 新しい攻撃手法の追跡
-
-### 組織向け
-1. **ポリシー策定**: パターンロック使用に関する組織方針
-2. **従業員教育**: セキュリティ意識向上プログラム
-3. **技術更新**: 定期的なセキュリティ機能のアップデート
-
----
-
-*最終更新: 2024年12月*
-*本文書は学術研究および防御的セキュリティ目的でのみ使用してください。*
+この資料は、防御と学習のために書いています。

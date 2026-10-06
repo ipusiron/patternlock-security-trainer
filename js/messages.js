@@ -13,11 +13,11 @@
     'ui.tabExamples': 'パターン例',
     'ui.tabLearn': '座学',
     'ui.drawHeading': 'パターンを描く',
-    'ui.drawHint': '点から指（マウス）を離さずになぞります。キーボードでは Tab で点を選び、Enter で順に足します。飛び越えた点は、Android と同じく自動で入ります。',
+    'ui.drawHint': '点から指（マウス）を離さずになぞります。キーボードではTabで点を選び、Enterで順に足します。飛び越えた点は、Androidと同じく自動で入ります。',
     'ui.undo': '1手戻す',
     'ui.clear': 'クリア',
     'ui.showNumbers': '点の番号を表示',
-    'ui.patternInputLabel': '文字で入れる（点の番号0〜8。例 0-4-8-5）',
+    'ui.patternInputLabel': '文字で入れる（点の番号0〜8。例0-4-8-5）',
     'ui.shapeHeading': '形の特徴',
     'ui.helpShapeLabel': '形の特徴の数え方',
     'ui.kNodes': '点の数',
@@ -47,10 +47,10 @@
     'ui.savedEmpty': '保存したパターンはありません。',
     'ui.clearSaved': 'すべて削除',
     'ui.examplesHeading': 'パターン例',
-    'ui.examplesNote': 'どれも Android で設定できる有効なパターンです。値はすべて画面の中で計算しています。「調べる」で、そのパターンを「調べる」タブに入れます。',
+    'ui.examplesNote': 'どれもAndroidで設定できる有効なパターンです。値はすべて画面の中で計算しています。「調べる」で、そのパターンを「調べる」タブに入れます。',
     'ui.learnHeading': '座学',
     'ui.close': '閉じる',
-    'ui.helpShape1': '交差: 隣り合わない2本の線が交わるか、点で触れる回数です。重なり: 前に引いた線（点と点の間の1区間）をもう一度通る回数です。数え方は Golla ら（2019）の定義に合わせています。',
+    'ui.helpShape1': '交差: 隣り合わない2本の線が交わるか、点で触れる回数です。重なり: 前に引いた線（点と点の間の1区間）をもう一度通る回数です。数え方はGollaら（2019）の定義に合わせています。',
     'ui.helpShape2': '桂馬飛び: 横2・縦1、または横1・縦2だけ離れた点へ直接引く線です。間に点がないので、何も自動で入りません。',
     'ui.helpShape3': '始点は角（0・2・6・8）、辺（1・3・5・7）、中央（4）に分けます。',
     'ui.helpAttacks1': '当て推量と総当たりは、端末の画面で試す攻撃です。Android 7以降は、失敗が続くと待たされます'
@@ -81,38 +81,38 @@
     'err.short': '4点以上が必要です（いま{n}点）。',
 
     'status.empty': 'パターンを描くか、文字で入れてください。',
-    'status.short': '4点以上を描くと、攻撃ごとの値が出ます（Android は4点未満を設定できません）。',
+    'status.short': '4点以上を描くと、攻撃ごとの値が出ます（Androidは4点未満を設定できません）。',
     'status.computing': '全389,112通りを数えています…',
 
     'card.guess.title': '当て推量（端末で試す）',
     'card.guess.start': '始点の点{node}は、調査で{share}%の人が選んだ点です（9点中{rank}位）。',
     'card.guess.length': '{n}点のパターンは、調査で{share}%でした（長さ6種類のうち{rank}位）。',
     'card.guess.rate': 'Android 7以降の待ち時間では、1日に{day}回、1週間に{week}回しか試せません。',
-    'card.guess.paper': '人の選び方の順に試すと、{guesses}回で3×3のパターンの{share}%が当たりました（Aviv ら 2015）。',
+    'card.guess.paper': '人の選び方の順に試すと、{guesses}回で3×3のパターンの{share}%が当たりました（Avivら、2015）。',
     'card.brute.title': '総当たり（全部を順に試す）',
     'card.brute.count': '{n}点のパターンは{count}通りです。短い順に全部試すと、最悪{worst}回目に当たります。',
     'card.brute.time': '端末の画面で{worst}回試すには、待ち時間だけで{time}かかります（Android 7以降）。',
-    'card.brute.legacy': '古い Android（5.1以前）は、パターンを塩なしの SHA-1 にして gesture.key に保存していました。このファイルが抜かれると、'
+    'card.brute.legacy': '古いAndroid（5.1以前）は、パターンを塩なしのSHA-1にしてgesture.keyに保存していました。このファイルが抜かれると、'
       + '全{total}通りの表を引くだけで一瞬で戻ります。',
     'card.shoulder.title': '覗き見（肩越し）',
     'card.shoulder.length': '{n}点です。長いほど覗き見されにくくなります。',
     'card.shoulder.paper': '6点のパターンを1回見ただけで、線を表示する設定では{withLines}%、線を表示しない設定では{withoutLines}%が再現されました'
-      + '（6桁の PIN は{pin}%。Aviv ら 2017）。交差や桂馬飛びの影響は、はっきりしませんでした。',
-    'card.shoulder.tip': 'Android の「パターンを表示する」をオフにすると、描いた線が画面に出なくなります。',
+      + '（6桁のPINは{pin}%。Avivら、2017）。交差や桂馬飛びの影響は、はっきりしませんでした。',
+    'card.shoulder.tip': 'Androidの「パターンを表示する」をオフにすると、描いた線が画面に出なくなります。',
     'card.smudge.title': '汚れ（画面に残る指の跡）',
     'card.smudge.points': '使った点だけがわかると、候補は{points}通り残ります。',
     'card.smudge.lines': '引いた線（向きなし）までわかると、候補は{lines}通りです。',
-    'card.smudge.paper': '画面の汚れを撮影すると、条件によって{partial}%で一部が、{full}%で全部がわかりました（Aviv ら 2010）。',
+    'card.smudge.paper': '画面の汚れを撮影すると、条件によって{partial}%で一部が、{full}%で全部がわかりました（Avivら、2010）。',
     'card.thermal.title': '熱（サーモカメラ）',
-    'card.thermal.none': '重なりはありません。重なりのないパターンは、入力後{seconds}秒以内なら熱の跡から{rate}%当てられました（Abdelrahman ら 2017、18人）。',
-    'card.thermal.some': '重なりが{o}本あります。重なりのあるパターンでは、{seconds}秒以内の当たりが{rate}%に下がりました（Abdelrahman ら 2017、18人）。',
+    'card.thermal.none': '重なりはありません。重なりのないパターンは、入力後{seconds}秒以内なら熱の跡から{rate}%当てられました（Abdelrahmanら、2017、18人）。',
+    'card.thermal.some': '重なりが{o}本あります。重なりのあるパターンでは、{seconds}秒以内の当たりが{rate}%に下がりました（Abdelrahmanら、2017、18人）。',
     'card.video.title': '動画（離れた場所からの撮影）',
-    'card.video.score': 'Sun らの複雑さは PS {ps}（{cls}）です。',
+    'card.video.score': 'Sunらの複雑さはPS {ps}（{cls}）です。',
     'card.video.paper': '指先を追う動画の攻撃では、{attempts}回以内に{within}%超が当たりました。1回目に当たったのは「複雑」（PS 33超）で{complex}%、'
-      + '「単純」（19未満）で{simple}%です（Ye ら 2017）。複雑な形ほど、この攻撃には弱いことがあります。',
-    'ref.title': '参考: 視覚的な複雑さ（Sun ら 2014）',
-    'ref.line': 'PS ＝ 点の数 × log₂（線の長さ＋交差＋重なり）＝ {ps}。PS がこれより小さいパターンは、全{total}通りの{pct}%です。',
-    'ref.caveat': 'この種の強度メーターの値は、実際の推測されやすさとの相関が低いと報告されています（Golla ら 2019）。目安にとどめてください。',
+      + '「単純」（19未満）で{simple}%です（Yeら、2017）。複雑な形ほど、この攻撃には弱いことがあります。',
+    'ref.title': '参考: 視覚的な複雑さ（Sunら、2014）',
+    'ref.line': 'PS＝点の数×log₂（線の長さ＋交差＋重なり）＝{ps}。PSがこれより小さいパターンは、全{total}通りの{pct}%です。',
+    'ref.caveat': 'この種の強度メーターの値は、実際の推測されやすさとの相関が低いと報告されています（Gollaら、2019）。目安にとどめてください。',
 
     'dur.seconds': '{n}秒', 'dur.minutes': '{n}分', 'dur.hours': '{n}時間', 'dur.days': '{n}日', 'dur.years': '{n}年',
 
@@ -140,24 +140,24 @@
     'ex.snake9.title': '9点の蛇行',
     'ex.snake9.lesson': '全部の点を使うので、覗き見には強い長さです。点の汚れだけなら候補は{points}通りでも、線の汚れが見えると{lines}通りまで絞られます。',
     'ex.overlap.title': '引き直しのある形',
-    'ex.overlap.lesson': '0から2へ引くとき、使った1の上を通り、1-0 の線をもう一度なぞります。重なりは熱の跡を乱すので、熱の攻撃に強くなります。',
+    'ex.overlap.lesson': '0から2へ引くとき、使った1の上を通り、1-0の線をもう一度なぞります。重なりは熱の跡を乱すので、熱の攻撃に強くなります。',
     'ex.knight.title': '桂馬飛びの4点',
     'ex.knight.lesson': '4点でも交差と桂馬飛びがあります。ただし4点なので、短い順に試す総当たりでは最初の{count}通りの中に入ります。',
     'ex.center.title': '中央から始める',
     'ex.center.lesson': '中央から始めた人は{share}%だけでした。始点の偏りを外すと、当て推量の最初の候補から外れやすくなります。',
     'ex.complex.title': '最も複雑な形の1つ',
-    'ex.complex.lesson': 'Sun らの PS が最大（{max}）の形です。複雑な形は覗き見には強くても、動画の攻撃ではかえって当てられやすいことがあります。',
+    'ex.complex.lesson': 'SunらのPSが最大（{max}）の形です。複雑な形は覗き見には強くても、動画の攻撃ではかえって当てられやすいことがあります。',
 
     'learn.basics.title': 'パターンロックの仕組み',
-    'learn.basics.p1': '3×3の9個の点を、指を離さずに一筆でなぞります。Android では4点以上が必要で、同じ点は2回使えません。',
-    'learn.basics.p2': 'まだ使っていない点を飛び越えると、その点が自動で入ります（0→2 は 0→1→2 になる）。使った点の上は通れます。'
+    'learn.basics.p1': '3×3の9個の点を、指を離さずに一筆でなぞります。Androidでは4点以上が必要で、同じ点は2回使えません。',
+    'learn.basics.p2': 'まだ使っていない点を飛び越えると、その点が自動で入ります（0→2は0→1→2になる）。使った点の上は通れます。'
       + '桂馬飛び（横2・縦1など）は、間に点がないので直接つながります。',
     'learn.basics.p3': 'この規則で作れるパターンは全部で{total}通りです。短い順に全部試す攻撃者は、長さLのパターンに「L点以下の合計」回目までに必ず当たります。',
     'learn.colLength': '長さ',
     'learn.colCount': 'パターンの数',
     'learn.colWorst': '短い順に試したときの最悪の回数',
     'learn.device.title': '端末はどう守っているか',
-    'learn.device.p1': 'Android 7以降は、失敗が続くと次を試せるまで待たされます（AOSP の Gatekeeper）。待ち時間は次のとおりで、'
+    'learn.device.p1': 'Android 7以降は、失敗が続くと次を試せるまで待たされます（AOSPのGatekeeper）。待ち時間は次のとおりで、'
       + '1日に{day}回、1週間に{week}回、30日で{month}回しか試せません。実機ではメーカーの安全な領域（TEE）の中で動き、値はメーカーが変えられます。',
     'learn.colFailures': '失敗の回数',
     'learn.colWait': '次を試すまでの待ち',
@@ -165,40 +165,40 @@
     'learn.range': '{from}〜{to}回目',
     'learn.single': '{n}回目',
     'learn.andAfter': '{n}回目以降',
-    'learn.device.p2': 'いまの Android は、パターンを scrypt で引き伸ばし、端末の安全な領域にある秘密と結びつけて、データを暗号化する鍵を守ります。'
-      + '公式の説明は、scrypt だけではあまり安全にならず、守りの本体はハードウェアによる回数の制限だとしています。',
-    'learn.device.p3': '古い Android（4.4〜5.1）は、パターンの各点を0〜8の1バイトにして塩なしの SHA-1 を取り、/data/system/gesture.key に保存していました。'
-      + '全{total}通りの SHA-1 の表を作っておけば、ファイルが抜かれた時点で一瞬で戻ります。鑑識の道具もこの方法を使います。Android 6.0 からは Gatekeeper に移りました。',
+    'learn.device.p2': 'いまのAndroidは、パターンをscryptで引き伸ばし、端末の安全な領域にある秘密と結びつけて、データを暗号化する鍵を守ります。'
+      + '公式の説明は、scryptだけではあまり安全にならず、守りの本体はハードウェアによる回数の制限だとしています。',
+    'learn.device.p3': '古いAndroid（4.4〜5.1）は、パターンの各点を0〜8の1バイトにして塩なしのSHA-1を取り、/data/system/gesture.keyに保存していました。'
+      + '全{total}通りのSHA-1の表を作っておけば、ファイルが抜かれた時点で一瞬で戻ります。鑑識の道具もこの方法を使います。Android 6.0からはGatekeeperに移りました。',
     'learn.people.title': '人はどう選ぶか',
     'learn.people.loge': 'Løge（2015）の調査（{respondents}人・{patterns}個）では、左上から始めたのが{topLeft}%、角から始めたのが{corners}%、中央からは{center}%でした。'
       + 'よく使われた上位100個のパターンで、全体の{top100}%を占めました。',
-    'learn.people.uellenbeck': 'Uellenbeck ら（2013）が集めた実際のパターンでは、左上から始めたのが{topLeft}%、角からが{corners}%、中央からは{center}%でした。'
+    'learn.people.uellenbeck': 'Uellenbeckら（2013）が集めた実際のパターンでは、左上から始めたのが{topLeft}%、角からが{corners}%、中央からは{center}%でした。'
       + '人の選び方の順に推測すると、守りを意識して作ったパターンの約{g10}%が10回で、約{g30}%が30回で当たりました。',
-    'learn.people.aviv': 'Aviv ら（2015）は、{guesses}回の推測で3×3のパターンの{share3}%、4×4のパターンの{share4}%が当たったと報告しています。'
+    'learn.people.aviv': 'Avivら（2015）は、{guesses}回の推測で3×3のパターンの{share3}%、4×4のパターンの{share4}%が当たったと報告しています。'
       + '4×4に点を増やしても、推測されやすさは大きくは変わりませんでした。',
     'learn.attacks.title': '盗み見る攻撃',
-    'learn.attacks.smudge': '汚れ: 画面に残る指の跡を撮影すると、条件によって{partial}%で一部が、{full}%で全部がわかりました（Aviv ら 2010）。'
+    'learn.attacks.smudge': '汚れ: 画面に残る指の跡を撮影すると、条件によって{partial}%で一部が、{full}%で全部がわかりました（Avivら、2010）。'
       + 'このツールの数え上げでは、引いた線（向きなし）が全部見えると、{unique}%のパターンが1通りに決まります。',
     'learn.attacks.shoulder': '覗き見: 6点のパターンを1回見ただけで、線を表示する設定では{withLines}%、線を表示しない設定では{withoutLines}%が再現されました。'
-      + '6桁の PIN は{pin}%でした（Aviv ら 2017）。',
+      + '6桁のPINは{pin}%でした（Avivら、2017）。',
     'learn.attacks.video': '動画: 指先の動きを追う攻撃では、5回以内に{within}%超が当たりました。複雑な形ほど1回目に当たりやすく、「複雑」は{complex}%、'
-      + '「単純」は{simple}%でした（Ye ら 2017）。',
+      + '「単純」は{simple}%でした（Yeら、2017）。',
     'learn.attacks.thermal': '熱: 入力後{seconds}秒以内なら、重なりのないパターンは{noOverlap}%当たりました。重なりがあると{withOverlap}%に下がりました。'
-      + 'PIN は重複する数字があっても{pin}%超でした（Abdelrahman ら 2017、18人）。',
+      + 'PINは重複する数字があっても{pin}%超でした（Abdelrahmanら、2017、18人）。',
     'learn.users.title': '選ぶときに（使う人向け）',
     'learn.users.l1': '点を増やす。覗き見では長さの影響が最も大きく、総当たりの候補も増えます。',
     'learn.users.l2': '左上・角から始めない。始点の偏りは、当て推量の最初の候補になります。',
-    'learn.users.l3': 'Android の「パターンを表示する」をオフにする。覗き見での再現が{withLines}%から{withoutLines}%に下がりました。',
-    'learn.users.l4': '覗き見が心配な場面では、6桁以上の PIN も選択肢です（1回の覗き見での再現は{pin}%）。',
+    'learn.users.l3': 'Androidの「パターンを表示する」をオフにする。覗き見での再現が{withLines}%から{withoutLines}%に下がりました。',
+    'learn.users.l4': '覗き見が心配な場面では、6桁以上のPINも選択肢です（1回の覗き見での再現は{pin}%）。',
     'learn.users.l5': '形を複雑にすれば安全とは限りません。動画の攻撃では、複雑な形のほうが当たりやすいことがありました。',
     'learn.users.l6': '入力したあとの画面には汚れや熱の跡が残るので、人に渡す前に拭くと手がかりが減ります。',
     'learn.users.l7': 'このツールには、実際に使っているパターンを入れないでください。',
     'learn.devs.title': '作るときに（開発する人向け）',
-    'learn.devs.l1': '最小の長さを決める（Android は4点）。短いパターンほど、総当たりの最初の候補に入ります。',
-    'learn.devs.l2': '失敗が続いたら待たせる。Android の Gatekeeper は、140回目からは1回ごとに24時間待たせます。',
-    'learn.devs.l3': 'パターンは塩つきの遅いハッシュ（scrypt など）にし、回数の制限はハードウェアで守る。塩なしの SHA-1 は、全{total}通りの表で戻ります。',
-    'learn.devs.l4': '強度メーターを付けるなら、限界も伝える。見た目の複雑さの指標は推測されやすさとの相関が低い一方（Golla ら 2019）、'
-      + 'Song ら（2015）のメーターでは、パターンの約{share}%が当たるまでの推測の回数が{without}回から{with}回に増えました。',
+    'learn.devs.l1': '最小の長さを決める（Androidは4点）。短いパターンほど、総当たりの最初の候補に入ります。',
+    'learn.devs.l2': '失敗が続いたら待たせる。AndroidのGatekeeperは、140回目からは1回ごとに24時間待たせます。',
+    'learn.devs.l3': 'パターンは塩つきの遅いハッシュ（scryptなど）にし、回数の制限はハードウェアで守る。塩なしのSHA-1は、全{total}通りの表で戻ります。',
+    'learn.devs.l4': '強度メーターを付けるなら、限界も伝える。見た目の複雑さの指標は推測されやすさとの相関が低い一方（Gollaら、2019）、'
+      + 'Songら（2015）のメーターでは、パターンの約{share}%が当たるまでの推測の回数が{without}回から{with}回に増えました。',
     'learn.devs.l5': '線を表示しない設定を用意する（覗き見の対策）。',
     'learn.sources.title': '出典',
   };
