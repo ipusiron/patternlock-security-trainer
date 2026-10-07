@@ -962,7 +962,16 @@ select {
   padding: 10px 4px;
 }
 
-/* 数字だけの表（3×3と4×4の数）。桁をそろえて右寄せにし、狭い画面でも表のまま */
+/* 数字だけの表（3×3と4×4の数）。桁をそろえて右寄せにし、狭い画面でも表のまま。幅は中身に合わせる（広げると列が離れて読みにくい） */
+.data-table.numbers {
+  width: auto;
+}
+
+.data-table.numbers th,
+.data-table.numbers td {
+  padding: 8px 16px;
+}
+
 .data-table.numbers td,
 .data-table.numbers thead th:not(:first-child) {
   text-align: right;

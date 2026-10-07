@@ -50,6 +50,10 @@ You can try it directly in your browser.
 >
 >*“Review your device settings” in the Learn tab: seven items with research values, to check on your actual device*
 
+>![Going to a 4×4 grid in the Learn tab](assets/en/screenshot7.png)
+>
+>*“Going to a 4×4 grid” in the Learn tab: the counts by length for 3×3 and 4×4, counted with the same rules*
+
 ---
 
 ## ✨ Features
@@ -71,7 +75,8 @@ You can try it directly in your browser.
 ### 🧩 Examples and 📚 Learn
 
 - Examples: eight valid patterns (four dots from the top left, L shape, Z shape, nine-dot snake, retraced line, knight moves, center start, most complex shape). “Check” puts the pattern into the input
-- Learn: how pattern locks work, how the device protects you, how people choose, attacks that observe the pattern, tips for choosing and for building. Links to 12 sources
+- Learn: how pattern locks work, how the device protects you, how people choose, going to a 4×4 grid, attacks that observe the pattern, tips for choosing and for building. Links to 12 sources
+- Related tools: links to seven tools on nearby topics at the end of the Learn tab
 
 ### ⚖️ Compare two
 
@@ -125,6 +130,28 @@ You can try it directly in your browser.
 | 8 dots | 140,704 | 248,408 |
 | 9 dots | 140,704 | 389,112 |
 
+### Going to a 4×4 grid
+
+- Android’s standard grid is 3×3. The same rules are extended to the 16 dots of a 4×4 grid and counted by keeping the number of ways for each set of used dots and last dot (dynamic programming over subsets). It takes a few tens of milliseconds in the browser
+- There are 4,350,069,823,024 patterns in total, the same number Aviv et al. (2015) report. As powers of two, 3×3 is about 2^18.57 and 4×4 about 2^41.98
+
+| Length | 3×3 | 4×4 |
+|---|---|---|
+| 4 dots | 1,624 | 16,880 |
+| 5 dots | 7,152 | 154,680 |
+| 6 dots | 26,016 | 1,331,944 |
+| 7 dots | 72,912 | 10,690,096 |
+| 8 dots | 140,704 | 79,137,824 |
+| 9 dots | 140,704 | 533,427,944 |
+| 10 dots | — | 3,221,413,136 |
+| 11 dots | — | 17,068,504,632 |
+| 12 dots | — | 77,129,797,424 |
+| 13 dots | — | 285,415,667,080 |
+| 14 dots | — | 811,404,606,344 |
+| 15 dots | — | 1,577,602,537,520 |
+| 16 dots | — | 1,577,602,537,520 |
+| Total | 389,112 | 4,350,069,823,024 |
+
 ### Intersections, overlaps and complexity
 
 - Intersections count how many times two non-adjacent lines cross or touch at a dot. Overlaps count how many times a line between two neighboring dots is drawn again. These follow the definitions of Golla et al. (2019)
@@ -172,7 +199,7 @@ On real devices this runs inside the vendor’s trusted execution environment (T
 | Uellenbeck et al., 2013 | Real patterns (105 people) | 38% | 75% | 6% |
 
 - Lengths in Løge (2015): 4 dots 36%, 5 dots 23%, 6 dots 12%, 7 dots 12%, 8 dots 4%, 9 dots 12%. The 100 most common patterns made up 42% of all patterns
-- Guessing in the order people tend to choose found about 4% of the patterns made with security in mind within 10 guesses and about 9% within 30 (Uellenbeck et al., 2013). 20 guesses found 15% of 3×3 and 19% of 4×4 patterns (Aviv et al., 2015)
+- Guessing in the order people tend to choose found about 4% of the patterns made with security in mind within 10 guesses and about 9% within 30 (Uellenbeck et al., 2013). 20 guesses found 15% of 3×3 and 19% of 4×4 patterns, and 50,000 guesses found 95.9% and 66.7% (Aviv et al., 2015)
 
 ### Attacks
 
@@ -215,7 +242,7 @@ Visual complexity measures are reported to correlate poorly with how easily patt
 
 ### Education and research
 
-- Math classes and personal projects: check with the length table that the jump rule cuts the 985,824 permutations of the nine dots down to 389,112
+- Math classes and personal projects: check with the length table that the jump rule cuts the 985,824 permutations of the nine dots down to 389,112. You can also compare the count for a 4×4 grid under the same rules (4,350,069,823,024) with how easily the patterns people chose were guessed
 - A starting point for reading papers: follow the 12 sources in the Learn tab to the research on smudge, shoulder surfing, video and thermal attacks
 
 ### Everyday life and creative work
@@ -225,6 +252,20 @@ Visual complexity measures are reported to correlate poorly with how easily patt
 - Articles and teaching materials: the figures and numbers come with sources you can cite
 
 The author does not intend this tool to encourage attacks.
+
+---
+
+## 🔗 Related tools
+
+- [Day001 Password Checker](https://ipusiron.github.io/password-checker/): Check the strength of passwords people make up, including dictionaries and rules
+- [Day048 Token Entropy Estimator](https://ipusiron.github.io/token-entropy-estimator/): Estimate the random bits of tokens and keys and the time a brute-force attack needs
+- [Day060 Reverse Brute-force Demo](https://ipusiron.github.io/reverse-bruteforce-demo/): Watch an attack that tries one password on many accounts slip past per-account lockout
+- [Day063 KeyPress Pattern Analyzer](https://ipusiron.github.io/keypress-pattern-analyzer/): Measure how long keys are held and the gaps between presses, and try telling people apart by how they type
+- [Day073 InfoQuantity Academy](https://ipusiron.github.io/infoquantity-academy/): Learn the idea of information quantity (bits) from the basics
+- [Day088 PIN Threat Simulator](https://ipusiron.github.io/pin-threat-simulator/): Try attacks on PINs from fingerprint residue, heat, sound and video, and the defenses against them
+- [Day089 KeyWalk Analyzer](https://ipusiron.github.io/keywalk-analyzer/): Find passwords that rely on keyboard runs
+
+The links in the Learn tab only open the pages; the pattern you drew is not passed on.
 
 ---
 
@@ -255,7 +296,7 @@ npm test
 ```
 
 - Node.js 22 or later, no dependencies (`node:test`). Runs automatically in GitHub Actions on every push and pull request
-- Checks the logic (Android rules, the count, intersections and overlaps, PS, smudge candidates, device waits, comparing two patterns), the HTML of the page (CSP, ids, labels, tabs), the Japanese and English strings, color contrast, line length, the tabs, and the tables of both READMEs
+- Checks the logic (Android rules, the count, the count on a 4×4 grid, intersections and overlaps, PS, smudge candidates, device waits, comparing two patterns), the HTML of the page (CSP, ids, labels, tabs, related tools), the Japanese and English strings, color contrast, line length, the tabs, and the tables of both READMEs
 - The numbers in the README tables are recomputed from the logic by the tests
 
 ---
@@ -274,13 +315,15 @@ patternlock-security-trainer/
 │   │   ├── screenshot3.png # Examples
 │   │   ├── screenshot4.png # Learn, dark
 │   │   ├── screenshot5.png # Compare two
-│   │   └── screenshot6.png # Device settings checklist
+│   │   ├── screenshot6.png # Device settings checklist
+│   │   └── screenshot7.png # Learn, going to a 4×4 grid
 │   ├── screenshot.png      # Screenshot for the Japanese README (drawing and seeing the shape)
 │   ├── screenshot2.png     # Screenshot for the Japanese README (attack by attack)
 │   ├── screenshot3.png     # Screenshot for the Japanese README (examples)
 │   ├── screenshot4.png     # Screenshot for the Japanese README (learn, dark)
 │   ├── screenshot5.png     # Screenshot for the Japanese README (compare two)
-│   └── screenshot6.png     # Screenshot for the Japanese README (device settings checklist)
+│   ├── screenshot6.png     # Screenshot for the Japanese README (device settings checklist)
+│   └── screenshot7.png     # Screenshot for the Japanese README (learn, going to a 4×4 grid)
 ├── js/                     # Scripts other than the page (plain scripts, work from file://)
 │   ├── i18n.js             # Choosing and switching the language (Japanese, English)
 │   ├── messages.js         # Strings shown on the page (Japanese, English)

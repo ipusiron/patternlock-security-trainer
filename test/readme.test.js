@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { read, core } from './load.js';
+import { read, load, core } from './load.js';
 
 const C = core();
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -18,17 +18,17 @@ const DOCS = {
     file: 'README.md', research: 'SECURITY_RESEARCH.md', switcher: '[English](README.en.md) · 日本語',
     researchSwitcher: '[English](SECURITY_RESEARCH.en.md) · 日本語',
     day: '**Day064 - 生成AIで作るセキュリティツール100**', h1: '# PatternLock Security Trainer - パターンロック強度測定ツール', images: /^assets\/screenshot\d*\.png$/,
-    heads: ['🌐 デモページ', '📸 スクリーンショット', '✨ 機能', '📖 使い方', '🔬 技術的な説明', '📚 研究の値', '🎯 ユースケース', '🔒 セキュリティとプライバシー',
+    heads: ['🌐 デモページ', '📸 スクリーンショット', '✨ 機能', '📖 使い方', '🔬 技術的な説明', '📚 研究の値', '🎯 ユースケース', '🔗 関連ツール', '🔒 セキュリティとプライバシー',
       '⚠️ 注意と限界', '🧪 テスト', '📁 ディレクトリー構造', '💻 動作環境', '📄 ライセンス', '🛠️ このツールについて'],
     about: '「生成AIで作るセキュリティツール100」',
-    length: (l) => `${l}点`, lengthHead: '長さ', waitHead: '失敗の回数', peopleHead: '出典', attackHead: '攻撃', exampleHead: '例',
+    length: (l) => `${l}点`, lengthHead: '長さ', total: '合計', bits: (b) => `約2の${b}乗`, waitHead: '失敗の回数', peopleHead: '出典', attackHead: '攻撃', exampleHead: '例',
     dur: (sec) => (sec < 60 ? `${Math.round(sec)}秒` : sec < 3600 ? `${oneDecimal(sec / 60)}分` : `${oneDecimal(sec / 3600)}時間`),
     noWait: '待ちなし', single: (n) => `${n}回目`, range: (a, b) => `${a}〜${b}回目`, after: (n) => `${n}回目以降`,
     rate: (d, w, m) => `1日に${d}回、1週間に${w}回、30日で${m}回`,
     people: (F) => [['Løge 2015', `${F.loge.respondents}人・${num(F.loge.patterns)}個`], ['Uellenbeckら、2013', '実際のパターン（105人）']],
     lengths: (L) => Object.entries(L).map(([l, s]) => `${l}点${s}%`).join('・'),
     facts: (F) => [`上位100個のパターンで全体の${F.loge.top100}%`, `約${F.uellenbeck.guesses10}%が10回で、約${F.uellenbeck.guesses30}%が30回`,
-      `${F.aviv2015.guesses}回で3×3の${F.aviv2015.share3}%、4×4の${F.aviv2015.share4}%`],
+      `${F.aviv2015.guesses}回で3×3の${F.aviv2015.share3}%、4×4の${F.aviv2015.share4}%が、${num(F.aviv2015.many)}回で3×3の${F.aviv2015.many3}%、4×4の${F.aviv2015.many4}%`],
     attacks: ['汚れ', '覗き見', '動画', '熱'],
     titles: ['左上から4点', 'L字', 'Z字', '9点の蛇行', '引き直しのある形', '桂馬飛びの4点', '中央から始める', '最も複雑な形の1つ'],
     ps: (ps, cls) => `${ps}（${{ simple: '単純', median: '中間', complex: '複雑' }[cls]}）`,
@@ -39,10 +39,11 @@ const DOCS = {
     researchSwitcher: 'English · [日本語](SECURITY_RESEARCH.md)',
     day: '**Day064 - 100 Security Tools with Generative AI**', h1: '# PatternLock Security Trainer - Android Pattern Lock Security Analyzer',
     images: /^assets\/en\/screenshot\d*\.png$/,
-    heads: ['🌐 Demo', '📸 Screenshots', '✨ Features', '📖 Usage', '🔬 Technical notes', '📚 Research values', '🎯 Use cases', '🔒 Security and privacy',
-      '⚠️ Notes and limitations', '🧪 Tests', '📁 Directory structure', '💻 Environment', '📄 License', '🛠️ About this tool'],
+    heads: ['🌐 Demo', '📸 Screenshots', '✨ Features', '📖 Usage', '🔬 Technical notes', '📚 Research values', '🎯 Use cases', '🔗 Related tools',
+      '🔒 Security and privacy', '⚠️ Notes and limitations', '🧪 Tests', '📁 Directory structure', '💻 Environment', '📄 License', '🛠️ About this tool'],
     about: '"100 Security Tools with Generative AI"',
-    length: (l) => `${l} dots`, lengthHead: 'Length', waitHead: 'Failures', peopleHead: 'Source', attackHead: 'Attack', exampleHead: 'Example',
+    length: (l) => `${l} dots`, lengthHead: 'Length', total: 'Total', bits: (b) => `2^${b}`,
+    waitHead: 'Failures', peopleHead: 'Source', attackHead: 'Attack', exampleHead: 'Example',
     dur: (sec) => (sec < 60 ? `${Math.round(sec)} s` : sec < 3600 ? `${oneDecimal(sec / 60)} min` : `${oneDecimal(sec / 3600)} h`),
     noWait: 'No wait', single: (n) => `${n}`, range: (a, b) => `${a}–${b}`, after: (n) => `${n} and later`,
     rate: (d, w, m) => `${d} tries per day, ${w} per week and ${m} in 30 days`,
@@ -50,7 +51,8 @@ const DOCS = {
     lengths: (L) => Object.entries(L).map(([l, s]) => `${l} dots ${s}%`).join(', '),
     facts: (F) => [`The 100 most common patterns made up ${F.loge.top100}%`,
       `about ${F.uellenbeck.guesses10}% of the patterns made with security in mind within 10 guesses and about ${F.uellenbeck.guesses30}% within 30`,
-      `${F.aviv2015.guesses} guesses found ${F.aviv2015.share3}% of 3×3 and ${F.aviv2015.share4}% of 4×4`],
+      `${F.aviv2015.guesses} guesses found ${F.aviv2015.share3}% of 3×3 and ${F.aviv2015.share4}% of 4×4`,
+      `${num(F.aviv2015.many)} guesses found ${F.aviv2015.many3}% and ${F.aviv2015.many4}%`],
     attacks: ['Smudge', 'Shoulder surfing', 'Video', 'Thermal'],
     titles: ['Four dots from the top left', 'L shape', 'Z shape', 'Nine-dot snake', 'Retraced line', 'Four dots with knight moves', 'Starting from the center',
       'One of the most complex shapes'],
@@ -125,6 +127,31 @@ test('長さ別の数の表は、計算部の数え上げと同じ（日英）',
     perm += p;
   }
   for (const d of Object.values(DOCS)) assert.ok(d.text.includes(d.perm(num(perm), num(s.total))), d.file);
+});
+
+test('4×4に広げた長さ別の数の表と2のべき乗は、計算部の gridCounts と同じ（日英）', () => {
+  const g3 = C.gridCounts(3);
+  const g4 = C.gridCounts(4);
+  for (const d of Object.values(DOCS)) {
+    const body = section(d.text, d.heads[4]);
+    const want = Object.keys(g4.byLength).map(Number).map((l) => [d.length(l), l in g3.byLength ? num(g3.byLength[l]) : '—', num(g4.byLength[l])]);
+    want.push([d.total, num(g3.total), num(g4.total)]);
+    assert.deepEqual(rows(body, `${d.lengthHead} | 3×3`), want, d.file);
+    for (const n of [g3.total, g4.total]) assert.ok(body.includes(d.bits(Math.log2(n).toFixed(2))), `${d.file}: ${n}`);
+  }
+});
+
+test('関連ツールの節は、画面（座学のタブ）のリンクと同じ順・同じ URL で、説明は辞書と同じ（日英）', () => {
+  const html = read('index.html');
+  const { MESSAGES } = load('js/messages.js').PatternMessages;
+  const re = /<a href="(https:\/\/ipusiron\.github\.io\/[a-z0-9-]+\/)" target="_blank" rel="noopener noreferrer">(Day(\d{3}) [^<]+)<\/a>/g;
+  const links = [...html.matchAll(re)].map((m) => ({ url: m[1], title: m[2], day: m[3] }));
+  assert.equal(links.length, 7);
+  for (const [lang, d] of Object.entries(DOCS)) {
+    const body = section(d.text, d.heads[7]);
+    const items = body.split('\n').filter((l) => l.startsWith('- '));
+    assert.deepEqual(items, links.map((k) => `- [${k.title}](${k.url}): ${MESSAGES[lang][`ui.relatedDay${k.day}`]}`), d.file);
+  }
 });
 
 test('待ち時間の表は、Gatekeeper の ComputeRetryTimeout と同じ。1日・1週間・30日に試せる回数（日英）', () => {
@@ -225,7 +252,14 @@ test('4×4 の有効なパターンの数（専門家向け資料）は、同じ
   }
   assert.equal(total, 4350069823024);
   assert.equal(C.gridCounts(4).total, total);
-  for (const d of Object.values(DOCS)) assert.ok(d.researchText.includes(num(total)), d.research);
+  const A = C.FACTS.aviv2015;
+  for (const d of Object.values(DOCS)) {
+    assert.ok(d.researchText.includes(num(total)), d.research);
+    assert.ok(d.text.includes(num(total)), d.file);
+    // 少ない回数では差が小さく、50,000回で差が出た（片方だけ書かない）
+    for (const v of [A.share3, A.share4, A.many3, A.many4]) assert.ok(d.researchText.includes(`${v}%`), `${d.research}: ${v}`);
+    assert.ok(d.researchText.includes(num(A.many)), d.research);
+  }
 });
 
 test('専門家向け資料の参考文献は、計算部の出典と同じ12件のリンク（日英）', () => {
@@ -243,7 +277,7 @@ test('ディレクトリー構造は実際のファイルと同じで、全行�
     .flatMap((e) => (e.isDirectory() ? [e.name, ...walk(path.join(dir, e.name))] : [e.name]));
   const all = walk('.');
   for (const d of Object.values(DOCS)) {
-    const block = section(d.text, d.heads[10]).match(/```\n([\s\S]*?)```/)[1];
+    const block = section(d.text, d.heads.find((h) => h.startsWith('📁'))).match(/```\n([\s\S]*?)```/)[1];
     const lines = block.trim().split('\n').slice(1);
     for (const l of lines) assert.match(l, /# \S/, l);
     const listed = new Set(lines.map((l) => l.replace(/^[│├└─\s]+/, '').replace(/\s+#.*$/, '').replace(/\/$/, '')));
@@ -252,11 +286,11 @@ test('ディレクトリー構造は実際のファイルと同じで、全行�
   }
 });
 
-test('スクリーンショットは日英6枚ずつ実在し、README から参照しているものだけが assets にある（各300KB以下）', () => {
+test('スクリーンショットは日英7枚ずつ実在し、README から参照しているものだけが assets にある（各300KB以下）', () => {
   const refs = {};
   for (const [lang, d] of Object.entries(DOCS)) {
     refs[lang] = [...d.text.matchAll(/!\[[^\]]*\]\((assets\/[^)]+)\)/g)].map((m) => m[1]);
-    assert.equal(refs[lang].length, 6, lang);
+    assert.equal(refs[lang].length, 7, lang);
     for (const r of refs[lang]) {
       assert.match(r, d.images, r);
       assert.ok(fs.existsSync(path.join(ROOT, r)), r);
