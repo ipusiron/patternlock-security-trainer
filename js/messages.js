@@ -163,6 +163,15 @@
     'ui.helpCompare2': '複雑さ（PS）には有利を付けません。複雑な形は覗き見には強くても、動画の攻撃ではかえって当たりやすかったからです（Yeら、2017）。',
     'ui.checklistHeading': '端末の設定を見直す',
     'ui.checklistNote': '実際の端末の設定画面で確かめる項目です。このツールには本物のパターンを入れないでください。チェックは保存しません（ページを閉じると消えます）。',
+    'ui.relatedHeading': '関連ツール',
+    'ui.relatedDay001': '人が考えたパスワードの強さを、辞書や規則も含めて確かめる',
+    'ui.relatedDay048': 'トークンや鍵のランダムな部分のビット数と、総当たりにかかる時間を見積もる',
+    'ui.relatedDay060': 'アカウントごとの回数制限を、1つのパスワードを多くの人に試す攻撃がすり抜ける様子を見る',
+    'ui.relatedDay063': 'キーを押している時間と押す間隔を測り、打ち方の癖で人を見分ける仕組みを試す',
+    'ui.relatedDay073': '情報量（ビット）の考え方を基礎から学ぶ',
+    'ui.relatedDay088': '暗証番号（PIN）への指紋の跡・熱・音・盗撮による攻撃と、守り方を試す',
+    'ui.relatedDay089': 'キーボードの並びに頼ったパスワードを見つける',
+    'ui.relatedNote': 'リンクはページを開くだけで、描いたパターンは渡しません。',
 
     'compare.nodes': '点の数（覗き見・総当たり）',
     'compare.startShare': '始点を選んだ人の割合（当て推量）',
@@ -217,8 +226,17 @@
       + 'よく使われた上位100個のパターンで、全体の{top100}%を占めました。',
     'learn.people.uellenbeck': 'Uellenbeckら（2013）が集めた実際のパターンでは、左上から始めたのが{topLeft}%、角からが{corners}%、中央からは{center}%でした。'
       + '人の選び方の順に推測すると、守りを意識して作ったパターンの約{g10}%が10回で、約{g30}%が30回で当たりました。',
-    'learn.people.aviv': 'Avivら（2015）は、{guesses}回の推測で3×3のパターンの{share3}%、4×4のパターンの{share4}%が当たったと報告しています。'
-      + '4×4に点を増やしても、推測されやすさは大きくは変わりませんでした。',
+    'learn.grid.title': '点を4×4に増やすと',
+    'learn.grid.p1': 'Androidの標準の画面は3×3です。同じ規則（4点以上、同じ点は2回使えない、まだ使っていない点を飛び越えるとその点が入る）を4×4の16点に広げて数えると、'
+      + '全部で{total4}通りになり、Avivら（2015）が報告した数と一致します。3×3の{total3}通り（約2の{bits3}乗）が、約2の{bits4}乗に増えます。',
+    'learn.grid.p2': '長さ別の数は次のとおりです（3×3は9点まで）。',
+    'learn.colGrid3': '3×3',
+    'learn.colGrid4': '4×4',
+    'learn.gridTotal': '合計',
+    'learn.gridNone': '—',
+    'learn.grid.p3': 'ただし、人が選ぶパターンは、盤の大きさほどには推測しにくくなりませんでした。Avivら（2015）の実験では、{guesses}回の推測で3×3の{share3}%、'
+      + '4×4の{share4}%が当たりました。差が出たのは推測を重ねたあとで、{many}回では3×3の{many3}%、4×4の{many4}%でした。',
+    'learn.grid.p4': '紙に描いてもらった実験では、長さの平均は3×3で{mean3}点、4×4で{mean4}点でした。4×4でも左上から始めたパターンが最も多く、{topLeft4}%でした（Avivら、2015）。',
     'learn.attacks.title': '盗み見る攻撃',
     'learn.attacks.smudge': '汚れ: 画面に残る指の跡を撮影すると、条件によって{partial}%で一部が、{full}%で全部がわかりました（Avivら、2010）。'
       + 'このツールの数え上げでは、引いた線（向きなし）が全部見えると、{unique}%のパターンが1通りに決まります。',
@@ -426,6 +444,15 @@
     'ui.checklistHeading': 'Review your device settings',
     'ui.checklistNote': 'Check these in your actual device settings. Do not enter your real pattern into this tool. '
       + 'The checks are not saved (they disappear when you close the page).',
+    'ui.relatedHeading': 'Related tools',
+    'ui.relatedDay001': 'Check the strength of passwords people make up, including dictionaries and rules',
+    'ui.relatedDay048': 'Estimate the random bits of tokens and keys and the time a brute-force attack needs',
+    'ui.relatedDay060': 'Watch an attack that tries one password on many accounts slip past per-account lockout',
+    'ui.relatedDay063': 'Measure how long keys are held and the gaps between presses, and try telling people apart by how they type',
+    'ui.relatedDay073': 'Learn the idea of information quantity (bits) from the basics',
+    'ui.relatedDay088': 'Try attacks on PINs from fingerprint residue, heat, sound and video, and the defenses against them',
+    'ui.relatedDay089': 'Find passwords that rely on keyboard runs',
+    'ui.relatedNote': 'The links only open the pages; the pattern you drew is not passed on.',
 
     'compare.nodes': 'Dots (shoulder surfing, brute force)',
     'compare.startShare': 'Share choosing this start (guessing)',
@@ -487,8 +514,20 @@
     'learn.people.uellenbeck': 'In real patterns collected by Uellenbeck et al. (2013), {topLeft}% started at the top left, {corners}% at a corner '
       + 'and {center}% at the center. Guessing in the order people tend to choose found about {g10}% of the patterns made with security '
       + 'in mind within 10 guesses and about {g30}% within 30.',
-    'learn.people.aviv': 'Aviv et al. (2015) report that {guesses} guesses found {share3}% of 3×3 patterns and {share4}% of 4×4 patterns. '
-      + 'Moving to a 4×4 grid did not make patterns much harder to guess.',
+    'learn.grid.title': 'Going to a 4×4 grid',
+    'learn.grid.p1': 'Android’s standard grid is 3×3. Counting with the same rules (at least four dots, no dot twice, a skipped unused dot is added) '
+      + 'on a 4×4 grid of 16 dots gives {total4} patterns, the same number Aviv et al. (2015) report. '
+      + 'The {total3} patterns of 3×3 (about 2^{bits3}) grow to about 2^{bits4}.',
+    'learn.grid.p2': 'The counts by length are below (3×3 stops at nine dots).',
+    'learn.colGrid3': '3×3',
+    'learn.colGrid4': '4×4',
+    'learn.gridTotal': 'Total',
+    'learn.gridNone': '—',
+    'learn.grid.p3': 'The patterns people choose, however, did not become as hard to guess as the grid size suggests. In Aviv et al. (2015), '
+      + '{guesses} guesses found {share3}% of 3×3 and {share4}% of 4×4 patterns. The difference appeared only after many more guesses: '
+      + '{many} guesses found {many3}% of 3×3 and {many4}% of 4×4.',
+    'learn.grid.p4': 'When participants drew patterns on paper, the mean length was {mean3} dots for 3×3 and {mean4} dots for 4×4. '
+      + 'On 4×4 as well, the top left was the most common start ({topLeft4}%) (Aviv et al., 2015).',
     'learn.attacks.title': 'Attacks that observe the pattern',
     'learn.attacks.smudge': 'Smudge: photographing finger traces revealed part of the pattern in {partial}% and all of it in {full}% of the '
       + 'conditions (Aviv et al., 2010). By this tool’s count, if every drawn line (without direction) is visible, {unique}% of patterns '

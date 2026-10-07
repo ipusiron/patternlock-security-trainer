@@ -420,11 +420,13 @@
     return rows;
   }
 
-  function table(headers, rows) {
+  // className に 'numbers' を足すと、数字だけの表として狭い画面でも表のまま出す（右寄せ）
+  function table(headers, rows, className = '') {
     const head = el('tr', {}, headers.map((h) => el('th', { scope: 'col', text: h })));
     const cell = (c, i) => (i === 0 ? el('th', { scope: 'row', text: c }) : el('td', { 'data-label': headers[i], text: c }));
     const body = rows.map((cells) => el('tr', {}, cells.map(cell)));
-    return el('div', { className: 'table-wrap' }, [el('table', { className: 'data-table' }, [el('thead', {}, [head]), el('tbody', {}, body)])]);
+    const cls = className ? `data-table ${className}` : 'data-table';
+    return el('div', { className: 'table-wrap' }, [el('table', { className: cls }, [el('thead', {}, [head]), el('tbody', {}, body)])]);
   }
 
   function section(titleKey, children, open = false) {
@@ -445,6 +447,11 @@
     const total = num(s.total);
     const lengths = Object.keys(s.byLength).map(Number);
     const uniqueShare = pct([...s.byLines.values()].filter((c) => c === 1).reduce((a, c) => a + c, 0) / s.total);
+    // 4×4 の数え上げ（初回は数十ミリ秒。2回目からは計算部が覚えている）
+    const g3 = C.gridCounts(3);
+    const g4 = C.gridCounts(4);
+    const bits = (n) => Math.log2(n).toFixed(2);
+    const A = F.aviv2015;
     const gk = gatekeeperRows().map((r) => [
       r.to === null ? t('learn.andAfter', { n: r.from }) : r.from === r.to ? t('learn.single', { n: r.from }) : t('learn.range', { from: r.from, to: r.to }),
       r.ms ? duration(r.ms / 1000) : t('learn.noWait'),
@@ -466,7 +473,17 @@
       section('learn.people.title', [
         para(t('learn.people.loge', { ...F.loge, patterns: num(F.loge.patterns) })),
         para(t('learn.people.uellenbeck', { ...F.uellenbeck, g10: F.uellenbeck.guesses10, g30: F.uellenbeck.guesses30 })),
-        para(t('learn.people.aviv', F.aviv2015)),
+      ]),
+      section('learn.grid.title', [
+        para(t('learn.grid.p1', { total4: num(g4.total), total3: num(g3.total), bits3: bits(g3.total), bits4: bits(g4.total) })),
+        para(t('learn.grid.p2')),
+        table([t('learn.colLength'), t('learn.colGrid3'), t('learn.colGrid4')], [
+          ...Object.keys(g4.byLength).map(Number).map((l) => [t('length.row', { n: l }),
+            l in g3.byLength ? num(g3.byLength[l]) : t('learn.gridNone'), num(g4.byLength[l])]),
+          [t('learn.gridTotal'), num(g3.total), num(g4.total)],
+        ], 'numbers'),
+        para(t('learn.grid.p3', { ...A, many: num(A.many) })),
+        para(t('learn.grid.p4', A)),
       ]),
       section('learn.attacks.title', [
         para(t('learn.attacks.smudge', { ...F.aviv2010, unique: uniqueShare })),

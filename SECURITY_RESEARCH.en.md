@@ -56,7 +56,7 @@ From android-7.0.0_r1, `system/gatekeeper/gatekeeper.cpp` (`ComputeRetryTimeout`
 - Lengths in Løge (2015) (values in Figure 5.5(b)): 4 dots 36%, 5 dots 23%, 6 dots 12%, 7 dots 12%, 8 dots 4%, 9 dots 12%. The 100 most common patterns made up 42% of all patterns
 - Start dots in Løge (2015) (Table 5.6): top left 44%, top 9%, top right 15%, left 6%, center 4%, right 2%, bottom left 14%, bottom 2%, bottom right 4%
 - The partial guessing entropy in Uellenbeck et al. (2013) for defensive patterns is 8.72, 9.10 and 10.90 bits (to guess 10%, 20% and 50%), against 18.57 bits for a uniform choice. About 4% were guessed within 10 guesses and about 9% within 30 (about 7% and 19% for patterns made in the offensive setting)
-- Aviv et al. (2015) report that 20 guesses found 15% of 3×3 and 19% of 4×4 patterns. There are 4,350,069,823,024 valid 4×4 patterns, but the patterns people chose were not much harder to guess
+- Aviv et al. (2015) report that 20 guesses found 15% of 3×3 and 19% of 4×4 patterns. There are 4,350,069,823,024 valid 4×4 patterns (matching a count under the same rules), yet the share found within a few guesses barely changed. The difference appeared at 50,000 guesses, which found 95.9% of 3×3 and 66.7% of 4×4 patterns
 
 ---
 

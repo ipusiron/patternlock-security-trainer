@@ -78,6 +78,22 @@ test('タブは3つ（調べる・パターン例・座学）。タブとパネ�
   assert.match(html, /<div class="tabs" role="tablist" aria-label="[^"]+" data-i18n-attr="aria-label:ui\.tabsLabel">/);
 });
 
+test('関連ツールは座学のタブに7本。Day の順に、公開ページへのリンク（新しいタブ）と日英の説明がある', () => {
+  const { MESSAGES } = load('js/messages.js').PatternMessages;
+  const panel = html.slice(html.indexOf('id="panel-learn"'), html.indexOf('<dialog'));
+  assert.match(panel, /<section class="card" aria-labelledby="relatedHeading">/);
+  const re = new RegExp('<a href="https://ipusiron\\.github\\.io/([a-z0-9-]+)/" target="_blank" rel="noopener noreferrer">Day(\\d{3}) [^<]+</a>\\s*'
+    + '<span class="related-desc" data-i18n="ui\\.relatedDay(\\d{3})">', 'g');
+  const items = [...panel.matchAll(re)];
+  assert.deepEqual(items.map((m) => m[2]), ['001', '048', '060', '063', '073', '088', '089']);
+  assert.equal(new Set(items.map((m) => m[1])).size, 7);
+  for (const [, slug, day, key] of items) {
+    assert.equal(key, day, slug);
+    for (const lang of ['ja', 'en']) assert.ok(MESSAGES[lang][`ui.relatedDay${day}`], `${lang} ${day}`);
+  }
+  assert.equal((html.match(/class="related-desc"/g) || []).length, 7);
+});
+
 test('ヘルプの ? ボタンには、それぞれの話題がある。ヘルプと確認はダイアログ', () => {
   const helps = [...html.matchAll(/class="help-icon" data-help="(\w+)" aria-label="[^"]+"/g)].map((m) => m[1]);
   assert.deepEqual(helps, ['shape', 'attacks', 'compare']);
