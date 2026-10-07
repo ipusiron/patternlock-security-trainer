@@ -11,7 +11,7 @@ const JAPANESE = new RegExp('[' + [[0x3000, 0x303f], [0x3040, 0x30ff], [0x3400, 
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 test('画面の文言は messages.js に集め、ほかの JS のコード（コメント以外）に日本語を書かない', () => {
-  for (const f of ['script.js', 'js/pattern-core.js', 'js/theme.js', 'js/theme-init.js', 'js/tabs.js']) {
+  for (const f of ['script.js', 'js/pattern-core.js', 'js/theme.js', 'js/theme-init.js', 'js/tabs.js', 'js/i18n.js']) {
     const lines = stripComments(read(f)).split('\n');
     const hit = lines.findIndex((l) => JAPANESE.test(l));
     assert.equal(hit, -1, `${f}:${hit + 1} ${lines[hit]}`);
@@ -25,6 +25,9 @@ test('script.js・theme.js が使うキーは、すべて日本語の辞書に�
   for (const s of ['corner', 'edge', 'center']) keys.add(`start.${s}`);
   for (const s of ['simple', 'median', 'complex']) keys.add(`sun.${s}`);
   for (let i = 0; i < 9; i++) keys.add(`pos.${i}`);
+  for (const r of C.COMPARE_ROWS) keys.add(`compare.${r.key}`);
+  for (const w of ['a', 'b', 'same', 'none']) keys.add(`compare.winner.${w}`);
+  for (const c of ['lines', 'length', 'start', 'pin', 'wipe', 'os', 'real']) keys.add(`check.${c}`);
   for (const ex of C.EXAMPLES) for (const k of ['title', 'lesson']) keys.add(`ex.${ex.id}.${k}`);
   const missing = [...keys].filter((k) => !(k in MESSAGES.ja));
   assert.deepEqual(missing, []);

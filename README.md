@@ -37,6 +37,8 @@ hub: true
 ---
 -->
 
+[English](README.en.md) · 日本語
+
 ![GitHub Repo stars](https://img.shields.io/github/stars/ipusiron/patternlock-security-trainer?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/ipusiron/patternlock-security-trainer?style=social)
 ![GitHub last commit](https://img.shields.io/github/last-commit/ipusiron/patternlock-security-trainer)
@@ -79,6 +81,14 @@ Androidの3×3パターンロックを描くと、当て推量・総当たり・
 >
 >*座学の「端末はどう守っているか」。Android 7以降の待ち時間の表（ダークモード）*
 
+>![2つを比べる画面](assets/screenshot5.png)
+>
+>*左上から4点（A）と、中央から始めた6点（B）を比べたところ。攻撃ごとに、どちらが攻撃者に手間をかけさせるかを示す*
+
+>![端末の設定のチェックリスト](assets/screenshot6.png)
+>
+>*座学の「端末の設定を見直す」。研究の値を添えた7項目を、実際の端末で確かめる*
+
 ---
 
 ## ✨ 機能
@@ -102,12 +112,23 @@ Androidの3×3パターンロックを描くと、当て推量・総当たり・
 - パターン例: 有効な8例（左上から4点・L字・Z字・9点の蛇行・引き直し・桂馬飛び・中央から・最も複雑な形）。「調べる」で入力に入れる
 - 座学: 仕組み・端末の守り・人の選び方・盗み見る攻撃・選ぶとき・作るとき。出典12件にリンク
 
-### 💾 保存して比べる
+### ⚖️ 2つを比べる
+
+- いまのパターン（A）と、文字で入れたか保存から選んだパターン（B）を、攻撃ごとの値で並べる
+- 行ごとに、どちらが攻撃者に手間をかけさせるかを示す（人が選んだ割合は小さいほう、候補・回数・待ち時間・点・重なりは大きいほう）。複雑さPSは攻撃によって逆なので示さない
+- Bを書き換えれば、点を足したときや始点を変えたときの違いがわかる
+
+### ✅ 端末の設定のチェックリスト
+
+- 座学のタブで、実際の端末で確かめる7項目（線を表示しない設定・長さ・始点・PIN・画面を拭く・Android 6.0以降・本物を入れない）を、研究の値つきで並べる。チェックは保存しない
+
+### 💾 保存する
 
 - 名前と点の並びだけをブラウザーに保存する（値は表示のたびに計算し直す）。保存は「保存」を押したときだけ
 
 ### 🖥️ 画面
 
+- 日本語・英語（初期の言語はURLの`?lang=`、保存した選択、ブラウザーの言語の順。切り替えても入力と状態はそのまま）
 - ライト／ダークモード（OSの設定に従い、ボタンでも切り替え）
 - タブはクリック、左右の矢印キー、Home・Endで移れる。URLの`#tab=examples`・`#tab=learn`で開くタブを選べる
 - 幅320pxのスマートフォンでも横にはみ出さない。ヘルプは`?`ボタンで開くダイアログ
@@ -121,7 +142,8 @@ Androidの3×3パターンロックを描くと、当て推量・総当たり・
 2. 「調べる」タブで、点をなぞるか、文字でパターンを入れる。実際に使っているパターンは入れない
 3. 「形の特徴」と「人の選び方と比べる」で、始点と長さがどれだけ選ばれやすいかを見る
 4. 「攻撃ごとに見る」で、攻撃の種類ごとの値を読む
-5. 気になるパターンは「保存して比べる」で並べる。「パターン例」「座学」で背景を確かめる
+5. 「2つを比べる」で、Bに点を足したり始点を変えたりして、値の違いを見る。気になるパターンは「保存する」で残す
+6. 「座学」で背景を確かめ、「端末の設定を見直す」の項目を実際の端末で確かめる
 
 ---
 
@@ -272,7 +294,7 @@ npm test
 ```
 
 - Node.js 22以上、依存なし（`node:test`）。GitHub Actionsでpushとプルリクエストのたびに実行する
-- 計算部（Androidの規則・数え上げ・交差と重なり・PS・汚れの候補・待ち時間）、画面のHTML（CSP・id・ラベル・タブ）、文言、配色のコントラスト、行の長さ、タブ、READMEの表を検証する
+- 計算部（Androidの規則・数え上げ・交差と重なり・PS・汚れの候補・待ち時間・2つの比較）、画面のHTML（CSP・id・ラベル・タブ）、日英の文言、配色のコントラスト、行の長さ、タブ、日英のREADMEの表を検証する
 - READMEの表の数値は、テストで計算部から計算し直して照合する
 
 ---
@@ -285,12 +307,22 @@ patternlock-security-trainer/
 │   └── workflows/          # GitHub Actionsのワークフロー
 │       └── test.yml        # pushとプルリクエストでnpm testを実行
 ├── assets/                 # 画像
+│   ├── en/                 # 英語版READMEのスクリーンショット
+│   │   ├── screenshot.png  # 描いて形の特徴を見る
+│   │   ├── screenshot2.png # 攻撃ごとに見る
+│   │   ├── screenshot3.png # パターン例
+│   │   ├── screenshot4.png # 座学・ダーク
+│   │   ├── screenshot5.png # 2つを比べる
+│   │   └── screenshot6.png # 端末の設定のチェックリスト
 │   ├── screenshot.png      # スクリーンショット（描いて形の特徴を見る）
 │   ├── screenshot2.png     # スクリーンショット（攻撃ごとに見る）
 │   ├── screenshot3.png     # スクリーンショット（パターン例）
-│   └── screenshot4.png     # スクリーンショット（座学・ダーク）
+│   ├── screenshot4.png     # スクリーンショット（座学・ダーク）
+│   ├── screenshot5.png     # スクリーンショット（2つを比べる）
+│   └── screenshot6.png     # スクリーンショット（端末の設定のチェックリスト）
 ├── js/                     # 画面以外のスクリプト（通常のスクリプト、file://でも動く）
-│   ├── messages.js         # 画面に出す文言
+│   ├── i18n.js             # 画面の言語（日本語・英語）の決定と切り替え
+│   ├── messages.js         # 画面に出す文言（日本語・英語）
 │   ├── pattern-core.js     # 計算（規則・数え上げ・特徴・PS・汚れ・待ち時間・研究の値）
 │   ├── tabs.js             # タブの切り替え（矢印キー・Home・End、URLの#tab=）
 │   ├── theme-init.js       # 読み込みの最初にテーマを当てる
@@ -300,6 +332,7 @@ patternlock-security-trainer/
 │   ├── core.test.js        # 規則・数え上げ・交差と重なり・PS・汚れ・待ち時間
 │   ├── format.test.js      # 行の長さ・改行コード・行数の下限
 │   ├── html.test.js        # CSP・要素のid・ラベル・aria-live・タブ・ヘルプ
+│   ├── i18n.test.js        # 日英の辞書のキー・英語に日本語がないこと・初期の言語
 │   ├── load.js             # js/のスクリプトをテストに読み込む
 │   ├── messages.test.js    # 文言の置き場所とキー、文言の数字
 │   ├── readme.test.js      # READMEの構成・表・ツリー・画像
@@ -308,7 +341,9 @@ patternlock-security-trainer/
 ├── .nojekyll               # GitHub PagesでJekyllを使わない指定
 ├── CLAUDE.md               # Claude Code向けの開発メモ
 ├── LICENSE                 # ライセンス（MIT）
+├── README.en.md            # 英語版のドキュメント
 ├── README.md               # 本ドキュメント
+├── SECURITY_RESEARCH.en.md # 研究の背景と出典（英語版）
 ├── SECURITY_RESEARCH.md    # 研究の背景と出典（専門家向け）
 ├── index.html              # 画面
 ├── package.json            # npm testの設定（依存なし）

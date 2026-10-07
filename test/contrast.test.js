@@ -68,4 +68,6 @@ test('選ばれていないタブは button の既定（アクセントの下地
   assert.match(rule('.tab[aria-selected="true"]'), /background: var\(--accent\);[^}]*color: var\(--on-accent\);/);
   assert.match(rule('.tabs'), /gap: 8px;[^}]*padding: 6px;/);
   assert.match(css, /:focus-visible \{\s*outline: 3px solid var\(--focus\);\s*outline-offset: 2px;/);
+  // ? ボタンは見出しのすぐ隣にあるので、枠を箱の内側に出す（外側に出すと見出しの文字にかかる）
+  assert.match(rule('.help-icon:focus-visible'), /outline-offset: -4px;/);
 });

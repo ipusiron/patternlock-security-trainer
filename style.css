@@ -241,6 +241,11 @@ button.secondary:hover {
   font-size: 1.2rem;
 }
 
+.lang-btn {
+  white-space: nowrap;
+  font-size: 15px;
+}
+
 .icon-btn:hover {
   background: var(--surface-2);
   border-color: var(--border);
@@ -512,6 +517,12 @@ input[type="text"] {
   font-size: 0.95rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* フォーカスの枠は、44pxの箱の内側（見える丸のすぐ外）に出し、隣の見出しの文字にかけない */
+.help-icon:focus-visible {
+  outline-offset: -4px;
+  border-radius: 50%;
 }
 
 .help-icon:hover {
@@ -791,6 +802,76 @@ input[type="text"] {
 
 .example-card button {
   margin-top: 6px;
+}
+
+/* 2つを比べる */
+.compare-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .compare-inputs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.field-label {
+  display: block;
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.compare-inputs .sequence {
+  margin: 0;
+  min-height: 44px;
+}
+
+.inline-label {
+  margin-left: 4px;
+}
+
+select {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.data-table tr.win-a td:nth-child(2),
+.data-table tr.win-b td:nth-child(3) {
+  font-weight: 700;
+}
+
+/* 端末の設定のチェックリスト */
+.checklist {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.checklist li {
+  margin: 4px 0;
+}
+
+.checklist .check {
+  align-items: flex-start;
+}
+
+.checklist .check input {
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+.checklist .check span {
+  padding: 8px 0;
 }
 
 /* 座学 */

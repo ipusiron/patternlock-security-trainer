@@ -23,6 +23,8 @@
         <p class="subtitle" data-i18n="ui.subtitle">Android式の3×3パターンロックを、攻撃の種類ごとに、文献と全パターンの数え上げで調べる</p>
       </div>
       <div class="header-buttons">
+        <button type="button" id="btnLang" class="icon-btn lang-btn" data-i18n="ui.langButton"
+          data-i18n-attr="aria-label:ui.switchLang;title:ui.switchLang" aria-label="英語に切り替える" title="英語に切り替える">EN</button>
         <button type="button" id="btnTheme" class="icon-btn" aria-label="ダークモードにする">☾</button>
       </div>
     </div>
@@ -100,8 +102,44 @@
         <div class="reference" id="reference"></div>
       </section>
 
+      <section class="card" aria-labelledby="compareHeading">
+        <div class="heading-help">
+          <h2 id="compareHeading" data-i18n="ui.compareHeading">2つを比べる</h2>
+          <button type="button" class="help-icon" data-help="compare" aria-label="比べ方" data-i18n-attr="aria-label:ui.helpCompareLabel">?</button>
+        </div>
+        <p class="note" data-i18n="ui.compareNote">いまのパターン（A）と、もう1つのパターン（B）を並べます。Bを書き換えて、点を足したときや始点を変えたときに、攻撃ごとの値がどう変わるかを見ます。</p>
+        <div class="compare-inputs">
+          <div>
+            <p class="field-label" id="compareALabel" data-i18n="ui.compareALabel">A（いまのパターン）</p>
+            <p class="sequence" id="compareA"></p>
+          </div>
+          <div>
+            <label class="field-label" for="compareB" data-i18n="ui.compareBLabel">B（文字で入れる）</label>
+            <input id="compareB" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="compareError" />
+            <p id="compareError" class="field-error" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="button-row">
+          <button type="button" id="btnCopyA" class="secondary" data-i18n="ui.copyA">AをBに写す</button>
+          <label class="inline-label" for="compareSaved" data-i18n="ui.compareSavedLabel">保存したパターンをBに</label>
+          <select id="compareSaved"></select>
+        </div>
+        <p id="compareStatus" class="status" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table class="data-table" id="compareTable">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="ui.colItem">項目</th><th scope="col">A</th><th scope="col">B</th>
+                <th scope="col" data-i18n="ui.colWinner">この点で有利</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="savedHeading">
-        <h2 id="savedHeading" data-i18n="ui.savedHeading">保存して比べる</h2>
+        <h2 id="savedHeading" data-i18n="ui.savedHeading">保存する</h2>
         <p class="note" data-i18n="ui.savedNote">名前と点の並びだけを、このブラウザーに保存します。値は表示のたびに計算し直します。</p>
         <div class="label-row">
           <label for="saveName" data-i18n="ui.saveNameLabel">名前（空なら自動で付ける。50字まで）</label>
@@ -139,6 +177,12 @@
     </div>
 
     <div class="tab-panel" id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
+      <section class="card" aria-labelledby="checklistHeading">
+        <h2 id="checklistHeading" data-i18n="ui.checklistHeading">端末の設定を見直す</h2>
+        <p class="note" data-i18n="ui.checklistNote">実際の端末の設定画面で確かめる項目です。このツールには本物のパターンを入れないでください。チェックは保存しません（ページを閉じると消えます）。</p>
+        <ul class="checklist" id="checklist"></ul>
+        <p id="checklistStatus" class="status" aria-live="polite"></p>
+      </section>
       <section class="card" aria-labelledby="learnHeading">
         <h2 id="learnHeading" data-i18n="ui.learnHeading">座学</h2>
         <div id="learnBody"></div>
@@ -159,6 +203,10 @@
         <p data-i18n="ui.helpAttacks1">当て推量と総当たりは、端末の画面で試す攻撃です。Android 7以降は、失敗が続くと待たされます（5回目・10回目で30秒、11回目から毎回30秒、30回目から10回ごとに倍、140回目から毎回24時間）。</p>
         <p data-i18n="ui.helpAttacks2">覗き見・汚れ・熱・動画は、パターンそのものを盗み見る攻撃です。数字は、それぞれの研究の条件（人数・距離・時間）での値で、どの場面にも当てはまるわけではありません。</p>
       </section>
+      <section class="help-topic" data-help-topic="compare" hidden>
+        <p data-i18n="ui.helpCompare1">「この点で有利」は、その攻撃に対してどちらが手間をかけさせるかです。人が選んだ割合は小さいほう、候補の数・回数・待ち時間・点の数・重なりは大きいほうを有利とします。</p>
+        <p data-i18n="ui.helpCompare2">複雑さ（PS）には有利を付けません。複雑な形は覗き見には強くても、動画の攻撃ではかえって当たりやすかったからです（Yeら、2017）。</p>
+      </section>
     </dialog>
 
     <dialog id="confirmDialog" class="help-dialog" aria-labelledby="confirmTitle">
@@ -175,6 +223,7 @@
   </footer>
 
   <script src="js/messages.js" defer></script>
+  <script src="js/i18n.js" defer></script>
   <script src="js/pattern-core.js" defer></script>
   <script src="js/theme.js" defer></script>
   <script src="js/tabs.js" defer></script>
