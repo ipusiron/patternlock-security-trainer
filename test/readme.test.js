@@ -194,7 +194,7 @@ test('本文の数字（汚れの候補・PS の範囲・例）は、計算部�
   }
 });
 
-test('4×4 の有効なパターンの数（専門家向け資料）は、同じ規則の数え上げと同じ', () => {
+test('4×4 の有効なパターンの数（専門家向け資料）は、同じ規則の別の数え上げ（長さごとに広げる）と計算部の両方で同じ', () => {
   const n = 4;
   const N = n * n;
   const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
@@ -224,6 +224,7 @@ test('4×4 の有効なパターンの数（専門家向け資料）は、同じ
     cur = next;
   }
   assert.equal(total, 4350069823024);
+  assert.equal(C.gridCounts(4).total, total);
   for (const d of Object.values(DOCS)) assert.ok(d.researchText.includes(num(total)), d.research);
 });
 

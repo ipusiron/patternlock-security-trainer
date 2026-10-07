@@ -54,6 +54,29 @@ test('有効なパターンは長さ4〜9で 1,624・7,152・26,016・72,912・1
   assert.deepEqual([4, 5, 6, 7, 8, 9].map(C.shortestFirstWorst), [1624, 8776, 34792, 107704, 248408, 389112]);
 });
 
+test('盤を4×4に広げても同じ規則で数える。3×3 は全パターンの数え上げと同じ、4×4 は計4,350,069,823,024通り（Aviv ら 2015 の値）', () => {
+  assert.deepEqual(C.passesOn(4, 0, 15), [5, 10], '角から角の対角線は2点を通る');
+  assert.deepEqual(C.passesOn(4, 0, 3), [1, 2]);
+  assert.deepEqual(C.passesOn(4, 0, 10), [5]);
+  assert.deepEqual(C.passesOn(4, 0, 9), [], '桂馬飛び（1,2）は通る点がない');
+  assert.deepEqual(C.passesOn(3, 0, 8), C.passes(0, 8));
+  const g3 = C.gridCounts(3);
+  assert.deepEqual(g3.byLength, C.stats().byLength);
+  assert.equal(g3.total, C.stats().total);
+  const g4 = C.gridCounts(4);
+  // 長さ4〜16の数は、計算部とは別に書いた参照実装（ref/day064/ref4.mjs）の値
+  assert.deepEqual(g4.byLength, {
+    4: 16880, 5: 154680, 6: 1331944, 7: 10690096, 8: 79137824, 9: 533427944, 10: 3221413136, 11: 17068504632, 12: 77129797424,
+    13: 285415667080, 14: 811404606344, 15: 1577602537520, 16: 1577602537520,
+  });
+  assert.equal(g4.total, 4350069823024);
+  assert.equal(g4.total, C.FACTS.aviv2015.count4);
+  assert.ok(Number.isSafeInteger(g4.total));
+  assert.equal(C.gridCounts(4), g4, '2回目は計算し直さない');
+  assert.deepEqual(C.GRID_SIZES, [3, 4]);
+  for (const bad of [2, 5, '4', 3.5]) assert.throws(() => C.gridCounts(bad), RangeError, String(bad));
+});
+
 test('交差・重なりは Golla ら（USEC 2019）の例のとおりに数える', () => {
   assert.equal(C.features([4, 0, 1, 3]).intersections, 1, '4-0 と 1-3 が交わる');
   const t = C.features([1, 4, 5, 3]);

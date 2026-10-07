@@ -10,17 +10,18 @@
   const xy = (i) => [i % SIZE, Math.floor(i / SIZE)];
   const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
 
-  // a から b へまっすぐ引いたときに通る点（端を除く）。3×3 では多くても1つ
-  function passes(a, b) {
-    const [ca, ra] = xy(a);
-    const [cb, rb] = xy(b);
+  // size×size の盤で、a から b へまっすぐ引いたときに通る点（端を除く）。3×3 では多くても1つ
+  function passesOn(size, a, b) {
+    const [ca, ra] = [a % size, Math.floor(a / size)];
+    const [cb, rb] = [b % size, Math.floor(b / size)];
     const dc = cb - ca;
     const dr = rb - ra;
     const g = gcd(Math.abs(dc), Math.abs(dr));
     const out = [];
-    for (let k = 1; k < g; k++) out.push((ra + (dr / g) * k) * SIZE + (ca + (dc / g) * k));
+    for (let k = 1; k < g; k++) out.push((ra + (dr / g) * k) * size + (ca + (dc / g) * k));
     return out;
   }
+  const passes = (a, b) => passesOn(SIZE, a, b);
   const PASS = Array.from({ length: NODES }, (_, a) => Array.from({ length: NODES }, (_, b) => (a === b ? [] : passes(a, b))));
 
   const isNode = (n) => Number.isInteger(n) && n >= 0 && n < NODES;
@@ -203,6 +204,42 @@
     return acc;
   }
 
+  // ---- 盤を大きくしたときの数（3×3 と 4×4） ----
+  // 3×3 と同じ規則（4点以上、同じ点は使わない、まだ使っていない点は飛び越えられない）を size×size の盤に広げ、長さごとに数える。
+  // 使った点の集合と最後の点ごとに、そこまでの描き方の数を持つ（部分集合の動的計画法）。4×4 は 2^16×16 の表で、数十ミリ秒かかる
+  const GRID_SIZES = [3, 4];
+  const gridCache = {};
+  function gridCounts(size) {
+    if (!GRID_SIZES.includes(size)) throw new RangeError(`size must be one of ${GRID_SIZES.join(', ')}`);
+    if (gridCache[size]) return gridCache[size];
+    const n = size * size;
+    const need = new Int32Array(n * n);
+    for (let a = 0; a < n; a++) {
+      for (let b = 0; b < n; b++) if (a !== b) need[a * n + b] = passesOn(size, a, b).reduce((m, x) => m | (1 << x), 0);
+    }
+    const ways = new Float64Array((1 << n) * n);
+    for (let a = 0; a < n; a++) ways[(1 << a) * n + a] = 1;
+    const byLength = {};
+    for (let l = MIN_LENGTH; l <= n; l++) byLength[l] = 0;
+    for (let used = 1; used < 1 << n; used++) {
+      let len = 0;
+      for (let x = used; x; x &= x - 1) len++;
+      for (let a = 0; a < n; a++) {
+        const w = ways[used * n + a];
+        if (!w) continue;
+        if (len >= MIN_LENGTH) byLength[len] += w;
+        for (let b = 0; b < n; b++) {
+          const m = need[a * n + b];
+          if (used & (1 << b) || (used & m) !== m) continue;
+          ways[(used | (1 << b)) * n + b] += w;
+        }
+      }
+    }
+    const total = Object.values(byLength).reduce((s, c) => s + c, 0);
+    gridCache[size] = { size, byLength, total };
+    return gridCache[size];
+  }
+
   // 汚れから、使った点がわかったとき／引いた線（向きなし）がわかったときに残る候補の数
   function smudgeCandidates(pattern) {
     const s = stats();
@@ -290,7 +327,8 @@
   const FACTS = {
     loge: { respondents: 802, patterns: 3393, topLeft: 44, corners: 77, center: 4, top100: 42 },
     uellenbeck: { topLeft: 38, corners: 75, center: 6, guesses10: 4, guesses30: 9 },
-    aviv2015: { guesses: 20, share3: 15, share4: 19 },
+    // 4×4 の総数は 2節、推測の割合は要旨、長さの平均は表1（紙に描いた実験の All）
+    aviv2015: { guesses: 20, share3: 15, share4: 19, many: 50000, many3: 95.9, many4: 66.7, count4: 4350069823024, mean3: 6.3, mean4: 9.6 },
     aviv2010: { partial: 92, full: 68 },
     aviv2017: { withLines: 64.2, withoutLines: 35.3, pin6: 10.8 },
     ye2017: { attempts: 5, within: 95, complexFirst: 97.5, simpleFirst: 60 },
@@ -343,8 +381,9 @@
   ];
 
   root.PatternCore = {
-    SIZE, NODES, MIN_LENGTH, xy, passes, extend, fromTouches, validate, parse, format, relation, unitSegments, startClass, features,
-    sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, smudgeCandidates, sunPercentile, summary, compare, COMPARE_ROWS,
+    SIZE, NODES, MIN_LENGTH, xy, passes, passesOn, extend, fromTouches, validate, parse, format, relation, unitSegments, startClass, features,
+    sunScore, sunClass, SUN_SIMPLE_BELOW, SUN_COMPLEX_ABOVE, stats, shortestFirstWorst, GRID_SIZES, gridCounts, smudgeCandidates, sunPercentile,
+    summary, compare, COMPARE_ROWS,
     gatekeeperTimeoutMs, legacyTimeoutMs, waitBeforeAttempt, attemptsWithin, START_SHARE, LENGTH_SHARE, FACTS, SOURCES, SOURCE_URLS, EXAMPLES,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
