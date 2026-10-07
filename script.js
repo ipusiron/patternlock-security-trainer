@@ -4,7 +4,7 @@
   'use strict';
 
   const C = globalThis.PatternCore;
-  const { t } = globalThis.PatternMessages;
+  const { t, getLanguage } = globalThis.PatternMessages;
   const $ = (id) => document.getElementById(id);
   const num = (n) => n.toLocaleString('en-US');
   const pct = (x) => (Math.floor(x * 1000) / 10).toFixed(1);
@@ -304,26 +304,22 @@
   }
 
   // ---- 文字での入力 ----
+  function errorText(r) {
+    if (r.error === 'char') return t('err.char');
+    if (r.error === 'repeat') return t('err.repeat', { n: r.repeated });
+    if (r.error === 'short') return t('err.short', { n: r.pattern.length });
+    return '';
+  }
+
   function bindInput() {
     const input = $('patternInput');
     const apply = () => {
       const r = C.parse(input.value);
       const err = $('patternError');
-      if (r.error === 'empty') {
-        err.textContent = '';
-        state.pattern = [];
-        state.steps = [];
-      } else if (r.error === 'char') {
-        err.textContent = t('err.char');
-        return render();
-      } else if (r.error === 'repeat') {
-        err.textContent = t('err.repeat', { n: r.repeated });
-        return render();
-      } else {
-        err.textContent = r.error === 'short' ? t('err.short', { n: r.pattern.length }) : '';
-        state.pattern = r.pattern;
-        state.steps = r.pattern.map(() => 1);
-      }
+      err.textContent = errorText(r);
+      if (r.error === 'char' || r.error === 'repeat') return render();
+      state.pattern = r.error === 'empty' ? [] : r.pattern;
+      state.steps = state.pattern.map(() => 1);
       render();
     };
     input.addEventListener('input', (e) => {
@@ -548,11 +544,7 @@
     const input = $('compareB');
     const apply = () => {
       const r = C.parse(input.value);
-      const err = $('compareError');
-      if (r.error === 'char') err.textContent = t('err.char');
-      else if (r.error === 'repeat') err.textContent = t('err.repeat', { n: r.repeated });
-      else if (r.error === 'short') err.textContent = t('err.short', { n: r.pattern.length });
-      else err.textContent = '';
+      $('compareError').textContent = errorText(r);
       compareState.b = r.error === 'char' || r.error === 'repeat' ? [] : r.pattern;
       renderCompare();
     };
@@ -735,6 +727,36 @@
     });
   }
 
+  // ---- 言語（日本語・英語） ----
+  // 切り替えたら、静的な文言を差し替え、入力と状態はそのままで全体を描き直す
+  function relabel() {
+    globalThis.PatternTheme.refresh($('btnTheme'), t);
+    labelNodes();
+    buildBias();
+    render();
+    renderSaved();
+    if (examplesBuilt) renderExamples();
+    if (learnBuilt) renderLearn();
+    renderChecklist();
+    for (const [inputId, errId] of [['patternInput', 'patternError'], ['compareB', 'compareError']]) {
+      const v = $(inputId).value;
+      $(errId).textContent = v.trim() ? errorText(C.parse(v)) : '';
+    }
+    $('saveStatus').textContent = '';
+  }
+
+  function initLanguage() {
+    const I18N = globalThis.PatternI18n;
+    const nav = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    I18N.use(I18N.initialLanguage(location.search, I18N.readSaved(), nav), document);
+    $('btnLang').addEventListener('click', () => {
+      const next = getLanguage() === 'ja' ? 'en' : 'ja';
+      I18N.use(next, document);
+      I18N.save(next);
+      relabel();
+    });
+  }
+
   // ---- タブ ----
   let tabs = null;
   function initTabs() {
@@ -747,6 +769,7 @@
     if (first) tabs.select(first);
   }
 
+  initLanguage();
   buildPad();
   bindPad();
   buildBias();

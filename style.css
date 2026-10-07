@@ -241,6 +241,11 @@ button.secondary:hover {
   font-size: 1.2rem;
 }
 
+.lang-btn {
+  white-space: nowrap;
+  font-size: 15px;
+}
+
 .icon-btn:hover {
   background: var(--surface-2);
   border-color: var(--border);
@@ -512,6 +517,12 @@ input[type="text"] {
   font-size: 0.95rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* フォーカスの枠は、44pxの箱の内側（見える丸のすぐ外）に出し、隣の見出しの文字にかけない */
+.help-icon:focus-visible {
+  outline-offset: -4px;
+  border-radius: 50%;
 }
 
 .help-icon:hover {

@@ -290,7 +290,8 @@ patternlock-security-trainer/
 │   ├── screenshot3.png     # スクリーンショット（パターン例）
 │   └── screenshot4.png     # スクリーンショット（座学・ダーク）
 ├── js/                     # 画面以外のスクリプト（通常のスクリプト、file://でも動く）
-│   ├── messages.js         # 画面に出す文言
+│   ├── i18n.js             # 画面の言語（日本語・英語）の決定と切り替え
+│   ├── messages.js         # 画面に出す文言（日本語・英語）
 │   ├── pattern-core.js     # 計算（規則・数え上げ・特徴・PS・汚れ・待ち時間・研究の値）
 │   ├── tabs.js             # タブの切り替え（矢印キー・Home・End、URLの#tab=）
 │   ├── theme-init.js       # 読み込みの最初にテーマを当てる
@@ -300,6 +301,7 @@ patternlock-security-trainer/
 │   ├── core.test.js        # 規則・数え上げ・交差と重なり・PS・汚れ・待ち時間
 │   ├── format.test.js      # 行の長さ・改行コード・行数の下限
 │   ├── html.test.js        # CSP・要素のid・ラベル・aria-live・タブ・ヘルプ
+│   ├── i18n.test.js        # 日英の辞書のキー・英語に日本語がないこと・初期の言語
 │   ├── load.js             # js/のスクリプトをテストに読み込む
 │   ├── messages.test.js    # 文言の置き場所とキー、文言の数字
 │   ├── readme.test.js      # READMEの構成・表・ツリー・画像

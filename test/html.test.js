@@ -25,9 +25,9 @@ test('インラインのスクリプト・イベントハンドラー・style �
   assert.doesNotMatch(html, /\sstyle=/);
   assert.doesNotMatch(html, /type="module"/);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(scripts, ['js/theme-init.js', 'js/messages.js', 'js/pattern-core.js', 'js/theme.js', 'js/tabs.js', 'script.js']);
+  assert.deepEqual(scripts, ['js/theme-init.js', 'js/messages.js', 'js/i18n.js', 'js/pattern-core.js', 'js/theme.js', 'js/tabs.js', 'script.js']);
   for (const s of scripts.slice(1)) assert.match(html, new RegExp(`<script src="${s}" defer></script>`));
-  for (const f of ['script.js', 'js/pattern-core.js', 'js/messages.js', 'js/theme.js', 'js/tabs.js', 'js/theme-init.js']) {
+  for (const f of ['script.js', 'js/pattern-core.js', 'js/messages.js', 'js/theme.js', 'js/tabs.js', 'js/theme-init.js', 'js/i18n.js']) {
     const src = read(f);
     assert.doesNotMatch(src, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/, f);
     assert.doesNotMatch(src, /\.cssText|setAttribute\('style'|alert\(|confirm\(|prompt\(|Math\.random/, f);
@@ -35,7 +35,7 @@ test('インラインのスクリプト・イベントハンドラー・style �
 });
 
 test('画面の要素の id がそろっている（それぞれ1つだけ）', () => {
-  const ids = ['btnTheme', 'pad', 'padCanvas', 'btnUndo', 'btnClear', 'showNumbers', 'patternInput', 'patternError', 'sequence', 'kNodes', 'kLength',
+  const ids = ['btnLang', 'btnTheme', 'pad', 'padCanvas', 'btnUndo', 'btnClear', 'showNumbers', 'patternInput', 'patternError', 'sequence', 'kNodes', 'kLength',
     'kIntersections', 'kOverlaps', 'kKnight', 'kStart', 'startMap', 'lengthBars', 'attackStatus', 'attackCards', 'reference', 'saveName', 'btnSave',
     'saveStatus', 'savedTable', 'savedEmpty', 'btnClearSaved', 'exampleGrid', 'learnBody', 'helpDialog', 'helpTitle', 'helpClose', 'confirmDialog',
     'confirmYes', 'confirmNo', 'tab-check', 'tab-examples', 'tab-learn', 'panel-check', 'panel-examples', 'panel-learn', 'compareA', 'compareB',
