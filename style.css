@@ -927,6 +927,30 @@ select {
   padding: 2px 0;
 }
 
+/* 関連ツール（ツール名のリンクと、その下に説明） */
+.related {
+  margin: 8px 0;
+  padding-left: 1.4em;
+  overflow-wrap: anywhere;
+}
+
+.related li {
+  margin: 10px 0;
+}
+
+.related a {
+  display: inline-block;
+  padding: 2px 0;
+}
+
+/* リンクのフォーカスの枠（外側に5px）が説明の文字にかからないよう、間をあける */
+.related-desc {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .site-footer {
   text-align: center;
   padding: 24px 16px 32px;
@@ -938,9 +962,16 @@ select {
   padding: 10px 4px;
 }
 
+/* 数字だけの表（3×3と4×4の数）。桁をそろえて右寄せにし、狭い画面でも表のまま */
+.data-table.numbers td,
+.data-table.numbers thead th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 幅の狭い画面では、表を1行ずつのかたまりにする（見出しは各セルの data-label から出す） */
 @media (max-width: 640px) {
-  .data-table thead {
+  .data-table:not(.numbers) thead {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -948,14 +979,14 @@ select {
     clip: rect(0 0 0 0);
   }
 
-  .data-table tr {
+  .data-table:not(.numbers) tr {
     display: block;
     border-bottom: 1px solid var(--border);
     padding: 6px 0;
   }
 
-  .data-table th,
-  .data-table td {
+  .data-table:not(.numbers) th,
+  .data-table:not(.numbers) td {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -963,14 +994,32 @@ select {
     padding: 4px 6px;
   }
 
-  .data-table td::before {
+  /* 見出しは折り返してよい（値の数字は折り返さない）。縮めないと、長い見出しで表が枠からはみ出す */
+  .data-table:not(.numbers) td::before {
     content: attr(data-label);
     color: var(--muted);
-    flex-shrink: 0;
+    text-align: left;
   }
 
-  .data-table td {
+  .data-table:not(.numbers) td {
     text-align: right;
+  }
+
+  .data-table.numbers th,
+  .data-table.numbers td {
+    padding: 6px 4px;
+  }
+}
+
+/* 4×4 の16桁の数が、幅320pxでも枠に収まるように */
+@media (max-width: 400px) {
+  .data-table.numbers {
+    font-size: 0.85rem;
+  }
+
+  .data-table.numbers th,
+  .data-table.numbers td {
+    padding: 6px 3px;
   }
 }
 

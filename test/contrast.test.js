@@ -70,4 +70,16 @@ test('選ばれていないタブは button の既定（アクセントの下地
   assert.match(css, /:focus-visible \{\s*outline: 3px solid var\(--focus\);\s*outline-offset: 2px;/);
   // ? ボタンは見出しのすぐ隣にあるので、枠を箱の内側に出す（外側に出すと見出しの文字にかかる）
   assert.match(rule('.help-icon:focus-visible'), /outline-offset: -4px;/);
+  // 関連ツールのリンクの真下に説明がある。枠（外側に5px）が説明の文字にかからないよう、間をあける
+  assert.match(rule('.related-desc'), /display: block;\s*margin-top: 6px;/);
+});
+
+test('狭い画面の表: 1行ずつのかたまりにするとき、各セルの見出しは折り返す（縮めないと幅320pxで表がはみ出した）。数字だけの表は表のまま', () => {
+  const i = css.indexOf('td::before {');
+  assert.ok(i >= 0);
+  assert.doesNotMatch(css.slice(i, css.indexOf('}', i)), /flex-shrink: 0/);
+  assert.match(css, /\.data-table:not\(\.numbers\) tr \{\s*display: block;/);
+  assert.match(css,
+    /\.data-table\.numbers td,\s*\.data-table\.numbers thead th:not\(:first-child\) \{\s*text-align: right;\s*font-variant-numeric: tabular-nums;/);
+  assert.match(css, /@media \(max-width: 400px\) \{\s*\.data-table\.numbers \{\s*font-size: 0\.85rem;/);
 });

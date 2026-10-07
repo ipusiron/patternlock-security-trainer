@@ -327,8 +327,9 @@
   const FACTS = {
     loge: { respondents: 802, patterns: 3393, topLeft: 44, corners: 77, center: 4, top100: 42 },
     uellenbeck: { topLeft: 38, corners: 75, center: 6, guesses10: 4, guesses30: 9 },
-    // 4×4 の総数は 2節、推測の割合は要旨、長さの平均は表1（紙に描いた実験の All）
-    aviv2015: { guesses: 20, share3: 15, share4: 19, many: 50000, many3: 95.9, many4: 66.7, count4: 4350069823024, mean3: 6.3, mean4: 9.6 },
+    // 4×4 の総数は 2節、推測の割合は要旨、長さの平均は表1（紙に描いた実験の All）、4×4 の始点は 4.1節
+    aviv2015: { guesses: 20, share3: 15, share4: 19, many: 50000, many3: 95.9, many4: 66.7, count4: 4350069823024, mean3: 6.3, mean4: 9.6,
+      topLeft4: 37.5 },
     aviv2010: { partial: 92, full: 68 },
     aviv2017: { withLines: 64.2, withoutLines: 35.3, pin6: 10.8 },
     ye2017: { attempts: 5, within: 95, complexFirst: 97.5, simpleFirst: 60 },
