@@ -229,6 +229,12 @@ Visual complexity measures are reported to correlate poorly with how easily patt
 
 ## 🎯 Use cases
 
+### Ways of using this tool in particular
+
+- Confirming that attempts grind to a halt under exponential backoff (rate-limiting and retry-design classes): the AOSP gatekeeper doubles the wait every 10 failures once failures pass 30, reaching 24 hours at the 140th. Only 139 tries fit in a week. The old scheme (a fixed 30 seconds every 5 failures) allows 100,805 tries in the same week. You can confirm with counts the gap between a fixed wait and one that grows exponentially, the same idea used in login rate limiting and retry design
+- Confirming that a smudge leaves only the set (mathematics and forensics classes): the finger marks left on a screen show which dots were touched (the set) but not the order they were traced in. Patterns using the dots 0, 1, 2 and 5 number 18 for that same four-dot set, and only 3 of them also share the same set of line segments. You can show the difference between a set (a combination) and a permutation by the number of candidates a smudge narrows to
+- Confirming that a movement constraint prunes the permutations (combinatorics classes): tracing 9 dots with a length of 4 to 9 gives 985,824 permutations if you could jump to any dot. Android has the rule that you cannot jump over an un-visited dot in between, which cuts the valid patterns to 389,112. Extending the same rule to a 4x4 grid gives 4,350,069,823,024. You can confirm with numbers how much a movement constraint prunes the space of permutations
+
 ### Security learning and training
 
 - Information security classes: students draw patterns that are not their own, compare the start-dot bias with the device waits, and discuss whether length or the attempt limit is the core of the protection

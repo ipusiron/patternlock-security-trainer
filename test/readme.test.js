@@ -326,3 +326,24 @@ test('表記: 見出しと番号の形、強調は節ごとに2か所まで。�
     assert.deepEqual(bad, [], name);
   }
 });
+
+test('ユースケースの「このツールならではの使い方」の数は計算部と同じ（日英）', () => {
+  const [ja, en] = [DOCS.ja.text, DOCS.en.text];
+  const week = 7 * 24 * 3600;
+  assert.equal(C.attemptsWithin(week), 139);
+  assert.equal(C.attemptsWithin(week, C.legacyTimeoutMs), 100805);
+  assert.equal(C.gatekeeperTimeoutMs(140), 24 * 60 * 60 * 1000);
+  assert.ok(ja.includes('1週間に試せるのは139回') && ja.includes('100,805回') && ja.includes('140回目で24時間'));
+  assert.ok(en.includes('139 tries fit in a week') && en.includes('100,805 tries') && en.includes('24 hours at the 140th'));
+  assert.deepEqual(C.smudgeCandidates([0, 1, 2, 5]), { points: 18, lines: 3 });
+  assert.ok(ja.includes('同じ4点の集合では18通り') && ja.includes('線分の組まで同じものは3通り'));
+  assert.ok(en.includes('number 18 for that same four-dot set') && en.includes('only 3 of them'));
+  const perm = (n, k) => { let v = 1; for (let i = 0; i < k; i++) v *= n - i; return v; };
+  let free = 0;
+  for (let k = 4; k <= 9; k++) free += perm(9, k);
+  assert.equal(free, 985824);
+  assert.equal(C.gridCounts(3).total, 389112);
+  assert.equal(C.gridCounts(4).total, 4350069823024);
+  assert.ok(ja.includes('985,824通り') && ja.includes('389,112通りに減る') && ja.includes('4,350,069,823,024通り'));
+  assert.ok(en.includes('985,824 permutations') && en.includes('to 389,112') && en.includes('4,350,069,823,024'));
+});
