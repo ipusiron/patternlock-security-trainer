@@ -18,7 +18,7 @@ category_en:
   - Mobile Security
   - Authentication
 
-difficulty: 4
+difficulty: 3
 
 tags:
   - pattern-lock
